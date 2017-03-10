@@ -2415,6 +2415,7 @@ MENU_ITEM(function, MSG_CALIBRATE_BED, lcd_mesh_calibration);
     MENU_ITEM(submenu, MSG_BED_CORRECTION_MENU, lcd_adjust_bed);
     MENU_ITEM(submenu, MSG_SHOW_END_STOPS, menu_show_end_stops);
     MENU_ITEM(gcode, MSG_CALIBRATE_BED_RESET, PSTR("M44"));
+	MENU_ITEM(submenu, PSTR("XYZ cal. details"), xyz_details);
 #ifndef SNMM
 	//MENU_ITEM(function, MSG_RESET_CALIBRATE_E, lcd_extr_cal_reset);
 #endif
@@ -4947,5 +4948,22 @@ void copy_and_scalePID_d()
 #endif
 }
 */
+
+
+static void xyz_details() {
+	lcd_implementation_clear();
+	// if xyz calibration was successfully finished, we have distance from min data
+	if (calibration_status() <= CALIBRATION_STATUS_LIVE_ADJUST) {
+		for (int i = 0; i < 3; i++) {
+			lcd_print_at_PGM(0, i, PSTR(""));
+			lcd_implementation_print(distance_from_min[i]);// ftostr13ns(distance_from_min[i]));
+
+														   //weigth
+		}
+	}
+	//if (LCD_CLICKED) lcd_goto_menu(lcd_calibration_menu);
+	//delay_keep_alive(2000);
+
+}
 
 #endif //ULTRA_LCD

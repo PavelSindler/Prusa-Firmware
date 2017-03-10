@@ -12,6 +12,7 @@ float   world2machine_rotation_and_skew[2][2];
 float   world2machine_rotation_and_skew_inv[2][2];
 float   world2machine_shift[2];
 
+
 // Weight of the Y coordinate for the least squares fitting of the bed induction sensor targets.
 // Only used for the first row of the points, which may not befully in reach of the sensor.
 #define WEIGHT_FIRST_ROW_X_HIGH (1.f)
@@ -1249,15 +1250,22 @@ inline bool improve_bed_induction_sensor_point3(int verbosity_level)
         float y1 = center_old_y + IMPROVE_BED_INDUCTION_SENSOR_POINT3_SEARCH_RADIUS;
         float y = y0;
 
-        if (x0 < X_MIN_POS)
-            x0 = X_MIN_POS;
-        if (x1 > X_MAX_POS)
-            x1 = X_MAX_POS;
-        if (y0 < Y_MIN_POS_FOR_BED_CALIBRATION)
-            y0 = Y_MIN_POS_FOR_BED_CALIBRATION;
-        if (y1 > Y_MAX_POS)
-            y1 = Y_MAX_POS;
-
+		if (x0 < X_MIN_POS) {
+			x0 = X_MIN_POS;
+			if (verbosity_level >= 20) SERIAL_ECHOLNPGM("X searching radius lower than X_MIN. Clamping was done.");
+		}
+		if (x1 > X_MAX_POS) {
+			x1 = X_MAX_POS;
+			if (verbosity_level >= 20) SERIAL_ECHOLNPGM("X searching radius higher than X_MAX. Clamping was done.");
+		}
+		if (y0 < Y_MIN_POS_FOR_BED_CALIBRATION) {
+			y0 = Y_MIN_POS_FOR_BED_CALIBRATION;
+			if (verbosity_level >= 20) SERIAL_ECHOLNPGM("Y searching radius lower than Y_MIN. Clamping was done.");
+		}
+		if (y1 > Y_MAX_POS) {
+			y1 = Y_MAX_POS;
+			if (verbosity_level >= 20) SERIAL_ECHOLNPGM("Y searching radius higher than X_MAX. Clamping was done.");
+		}
         if (verbosity_level >= 20) {
             SERIAL_ECHOPGM("Initial position: ");
             SERIAL_ECHO(center_old_x);
@@ -1742,6 +1750,7 @@ BedSkewOffsetDetectionResultType find_bed_offset_and_skew(int8_t verbosity_level
 
 BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8_t verbosity_level, uint8_t &too_far_mask)
 {
+	
     // Don't let the manage_inactivity() function remove power from the motors.
     refresh_cmd_timeout();
 
@@ -1755,6 +1764,8 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
     float *vec_y = vec_x + 2;
     float *cntr  = vec_y + 2;
     memset(pts, 0, sizeof(float) * 7 * 7);
+
+	if(verbosity_level >= 10) SERIAL_ECHOLNPGM("Improving bed offset and skew");
 
     // Cache the current correction matrix.
     world2machine_initialize();
@@ -1801,7 +1812,7 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
             delay_keep_alive(5000);
             current_position[Y_AXIS] = Y_MIN_POS;
             go_to_current(homing_feedrate[X_AXIS] / 60.f);
-            SERIAL_ECHOLNPGM("At Y-4");
+            SERIAL_ECHOLNPGM("At Y_MIN_POS");
             delay_keep_alive(5000);
         }
         // Go to the measurement point.
@@ -1809,8 +1820,15 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
         current_position[X_AXIS] = vec_x[0] * pgm_read_float(bed_ref_points+mesh_point*2) + vec_y[0] * pgm_read_float(bed_ref_points+mesh_point*2+1) + cntr[0];
         current_position[Y_AXIS] = vec_x[1] * pgm_read_float(bed_ref_points+mesh_point*2) + vec_y[1] * pgm_read_float(bed_ref_points+mesh_point*2+1) + cntr[1];
         // The calibration points are very close to the min Y.
-        if (current_position[Y_AXIS] < Y_MIN_POS_FOR_BED_CALIBRATION)
-            current_position[Y_AXIS] = Y_MIN_POS_FOR_BED_CALIBRATION;
+		if (current_position[Y_AXIS] < Y_MIN_POS_FOR_BED_CALIBRATION) {
+			current_position[Y_AXIS] = Y_MIN_POS_FOR_BED_CALIBRATION;
+			if (verbosity_level >= 20) {
+				SERIAL_ECHOPGM("Calibration point ");
+				SERIAL_ECHO(mesh_point);
+				SERIAL_ECHOPGM("lower than Ymin. Y coordinate clamping was used.");
+				SERIAL_ECHOLNPGM("");
+			}
+		}
         go_to_current(homing_feedrate[X_AXIS]/60);
         // Find its Z position by running the normal vertical search.
         if (verbosity_level >= 10)
@@ -1838,10 +1856,10 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
                 // of the sensor points, the y position cannot be measured
                 // by a cross center method.
                 // Use a zig-zag search for the first row of the points.
-                found = improve_bed_induction_sensor_point3(verbosity_level);
+                found = improve_bed_induction_sensor_point3(verbosity_level); //zig zag method
             } else {
                 switch (method) {
-                    case 0: found = improve_bed_induction_sensor_point(); break;
+                    case 0: found = improve_bed_induction_sensor_point(); break; 
                     case 1: found = improve_bed_induction_sensor_point2(mesh_point < 3, verbosity_level); break;
                     default: break;
                 }
@@ -1923,8 +1941,14 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
             goto canceled;
         }
         // In case of success, update the too_far_mask from the calculated points.
-        for (uint8_t mesh_point = 0; mesh_point < 3; ++ mesh_point) {
+		if (farm_mode) lcd_implementation_clear();
+		for (uint8_t mesh_point = 0; mesh_point < 3; ++ mesh_point) {
             float y = vec_x[1] * pgm_read_float(bed_ref_points+mesh_point*2) + vec_y[1] * pgm_read_float(bed_ref_points+mesh_point*2+1) + cntr[1];
+			distance_from_min[mesh_point] = (y - Y_MIN_POS_CALIBRATION_POINT_OUT_OF_REACH);
+			SERIAL_ECHOLNPGM("");
+			MYSERIAL.print(distance_from_min[mesh_point]);
+			SERIAL_ECHOLNPGM("");
+			MYSERIAL.print(y);
             if (y < Y_MIN_POS_CALIBRATION_POINT_OUT_OF_REACH)
                 too_far_mask |= 1 << mesh_point;
         }

@@ -214,6 +214,7 @@ void Stop();
 
 bool IsStopped();
 
+
 //put an ASCII command at the end of the current buffer.
 void enquecommand(const char *cmd, bool from_progmem = false);
 //put an ASCII command at the end of the current buffer, read from flash
@@ -299,6 +300,7 @@ extern unsigned int custom_message_type;
 extern unsigned int custom_message_state;
 
 
+
 // Handling multiple extruders pins
 extern uint8_t active_extruder;
 
@@ -328,3 +330,6 @@ float d_ReadData();
 void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y);
 
 #endif
+
+extern float	distance_from_min[3];
+extern float	y_weigth_from_calibration[3];

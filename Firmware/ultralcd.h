@@ -231,4 +231,6 @@ void lcd_extr_cal_reset();
 union MenuData;
 
 char reset_menu();
+
+static void xyz_details();
 #endif //ULTRALCD_H
