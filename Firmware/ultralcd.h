@@ -232,5 +232,7 @@ union MenuData;
 
 char reset_menu();
 
+void lcd_service_mode_show_result();
+
 static void xyz_details();
 #endif //ULTRALCD_H

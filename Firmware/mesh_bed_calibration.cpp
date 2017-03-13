@@ -309,7 +309,7 @@ BedSkewOffsetDetectionResultType calculate_machine_skew_and_offset_LS(
 
     BedSkewOffsetDetectionResultType result = BED_SKEW_OFFSET_DETECTION_PERFECT;
     {
-        float angleDiff = fabs(a2 - a1);
+        angleDiff = fabs(a2 - a1);
         if (angleDiff > BED_SKEW_ANGLE_MILD)
             result = (angleDiff > BED_SKEW_ANGLE_EXTREME) ?
                 BED_SKEW_OFFSET_DETECTION_SKEW_EXTREME :
@@ -1941,14 +1941,18 @@ BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8
             goto canceled;
         }
         // In case of success, update the too_far_mask from the calculated points.
-		if (farm_mode) lcd_implementation_clear();
 		for (uint8_t mesh_point = 0; mesh_point < 3; ++ mesh_point) {
             float y = vec_x[1] * pgm_read_float(bed_ref_points+mesh_point*2) + vec_y[1] * pgm_read_float(bed_ref_points+mesh_point*2+1) + cntr[1];
 			distance_from_min[mesh_point] = (y - Y_MIN_POS_CALIBRATION_POINT_OUT_OF_REACH);
-			SERIAL_ECHOLNPGM("");
-			MYSERIAL.print(distance_from_min[mesh_point]);
-			SERIAL_ECHOLNPGM("");
-			MYSERIAL.print(y);
+			if (verbosity_level >= 20) {
+				SERIAL_ECHOLNPGM("");
+				SERIAL_ECHOPGM("Distance from min:");
+				MYSERIAL.print(distance_from_min[mesh_point]);
+				SERIAL_ECHOLNPGM("");
+				SERIAL_ECHOPGM("y:");
+				MYSERIAL.print(y);
+				SERIAL_ECHOLNPGM("");
+			}
             if (y < Y_MIN_POS_CALIBRATION_POINT_OUT_OF_REACH)
                 too_far_mask |= 1 << mesh_point;
         }

@@ -278,6 +278,9 @@ bool loading_flag = false;
 unsigned int custom_message_type;
 unsigned int custom_message_state;
 
+float distance_from_min[3];
+float angleDiff = 0;
+
 bool volumetric_enabled = false;
 float filament_size[EXTRUDERS] = { DEFAULT_NOMINAL_FILAMENT_DIA
   #if EXTRUDERS > 1
@@ -3365,8 +3368,26 @@ void process_commands()
     {
 		// Only Z calibration?
 		bool onlyZ = code_seen('Z');
+		bool service_mode = false;
 
 		if (!onlyZ) {
+			lcd_display_message_fullscreen_P(MSG_MOVE_CARRIAGE_TO_THE_TOP);
+			delay_keep_alive(500);
+			if (lcd_clicked()) {
+				service_mode = true;
+				for (int i = 0; i < 5; i++) {
+					delay_keep_alive(500);
+					if (lcd_clicked() == false) service_mode = false;
+				}
+				if(service_mode == true){
+					lcd_display_message_fullscreen_P(PSTR("XYZ cal. service mode activated"));
+					SET_OUTPUT(BEEPER);
+					WRITE(BEEPER, HIGH);
+					delay_keep_alive(1000);
+					WRITE(BEEPER, LOW);
+					delay_keep_alive(3000);
+				}
+			}
 			setTargetBed(0);
 			setTargetHotend(0, 0);
 			setTargetHotend(0, 1);
@@ -3456,6 +3477,7 @@ void process_commands()
                     // if (result >= 0) babystep_apply();
                 }
                 lcd_bed_calibration_show_result(result, point_too_far_mask);
+				if (service_mode) lcd_service_mode_show_result();
                 if (result >= 0) {
                     // Calibration valid, the machine should be able to print. Advise the user to run the V2Calibration.gcode.
                     calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);

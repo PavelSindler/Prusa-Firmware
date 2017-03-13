@@ -1781,6 +1781,79 @@ int8_t lcd_show_fullscreen_message_yes_no_and_wait_P(const char *msg, bool allow
 	}
 }
 
+void lcd_service_mode_show_result() {
+	lcd_implementation_clear();
+	lcd_printPGM(PSTR("Y distance from min:"));
+	lcd_print_at_PGM(0, 1, PSTR("Left:"));
+	lcd_print_at_PGM(0, 2, PSTR("Center:"));
+	lcd_print_at_PGM(0, 3, PSTR("Right:"));
+		for (int i = 0; i < 3; i++) {
+			
+			lcd_print_at_PGM(8, i+1, PSTR(""));
+			lcd.print(distance_from_min[i]);
+		}
+	delay_keep_alive(1000);
+	while (!lcd_clicked()) {
+		delay_keep_alive(100);
+	}
+	delay_keep_alive(500);
+
+	float cntr[2] = {
+		eeprom_read_float((float*)(EEPROM_BED_CALIBRATION_CENTER + 0)),
+		eeprom_read_float((float*)(EEPROM_BED_CALIBRATION_CENTER + 4))
+	};
+	float vec_x[2] = {
+		eeprom_read_float((float*)(EEPROM_BED_CALIBRATION_VEC_X + 0)),
+		eeprom_read_float((float*)(EEPROM_BED_CALIBRATION_VEC_X + 4))
+	};
+	float vec_y[2] = {
+		eeprom_read_float((float*)(EEPROM_BED_CALIBRATION_VEC_Y + 0)),
+		eeprom_read_float((float*)(EEPROM_BED_CALIBRATION_VEC_Y + 4))
+	};
+	lcd_implementation_clear();
+	lcd_printPGM(PSTR("Transform. vectors:"));
+	lcd_print_at_PGM(0, 1, PSTR("C:"));
+	lcd_print_at_PGM(3, 1, PSTR(""));
+	lcd.print(cntr[0]);
+	lcd_printPGM(PSTR(";"));
+	lcd.print(cntr[1]);
+
+	lcd_print_at_PGM(0, 2, PSTR("X:"));
+	lcd_print_at_PGM(3, 2, PSTR(""));
+	lcd.print(vec_x[0]);
+	lcd_printPGM(PSTR(";"));
+	lcd.print(vec_x[1]);
+
+	lcd_print_at_PGM(0, 3, PSTR("Y:"));
+	lcd_print_at_PGM(3, 3, PSTR(""));
+	lcd.print(vec_y[0]);
+	lcd_printPGM(PSTR(";"));
+	lcd.print(vec_y[1]);
+
+	delay_keep_alive(1000);
+	while (!lcd_clicked()) {
+		delay_keep_alive(100);
+	}
+	delay_keep_alive(500);
+
+	lcd_implementation_clear();
+	lcd_printPGM(PSTR("Angle diff: "));
+	lcd.print(angleDiff);
+	lcd_print_at_PGM(0, 1, PSTR("Mild:"));
+	lcd_print_at_PGM(9, 1, PSTR(""));
+	lcd.print(0.12);
+	lcd_print_at_PGM(0, 2, PSTR("Extreme:"));
+	lcd_print_at_PGM(9, 2, PSTR(""));
+	lcd.print(0.25);
+
+	delay_keep_alive(1000);
+	while (!lcd_clicked()) {
+		delay_keep_alive(100);
+	}
+	delay_keep_alive(500);
+
+}
+
 void lcd_bed_calibration_show_result(BedSkewOffsetDetectionResultType result, uint8_t point_too_far_mask)
 {
     const char *msg = NULL;
@@ -2232,6 +2305,7 @@ void lcd_mesh_bedleveling()
 
 void lcd_mesh_calibration()
 {
+	lcd_update_enable(false);
   enquecommand_P(PSTR("M45"));
   lcd_return_to_status();
 }
@@ -2415,7 +2489,6 @@ MENU_ITEM(function, MSG_CALIBRATE_BED, lcd_mesh_calibration);
     MENU_ITEM(submenu, MSG_BED_CORRECTION_MENU, lcd_adjust_bed);
     MENU_ITEM(submenu, MSG_SHOW_END_STOPS, menu_show_end_stops);
     MENU_ITEM(gcode, MSG_CALIBRATE_BED_RESET, PSTR("M44"));
-	MENU_ITEM(submenu, PSTR("XYZ cal. details"), xyz_details);
 #ifndef SNMM
 	//MENU_ITEM(function, MSG_RESET_CALIBRATE_E, lcd_extr_cal_reset);
 #endif
@@ -4949,21 +5022,5 @@ void copy_and_scalePID_d()
 }
 */
 
-
-static void xyz_details() {
-	lcd_implementation_clear();
-	// if xyz calibration was successfully finished, we have distance from min data
-	if (calibration_status() <= CALIBRATION_STATUS_LIVE_ADJUST) {
-		for (int i = 0; i < 3; i++) {
-			lcd_print_at_PGM(0, i, PSTR(""));
-			lcd_implementation_print(distance_from_min[i]);// ftostr13ns(distance_from_min[i]));
-
-														   //weigth
-		}
-	}
-	//if (LCD_CLICKED) lcd_goto_menu(lcd_calibration_menu);
-	//delay_keep_alive(2000);
-
-}
 
 #endif //ULTRA_LCD
