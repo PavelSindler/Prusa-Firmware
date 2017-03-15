@@ -3372,8 +3372,9 @@ void process_commands()
 		bool service_mode = false;
 
 		if (!onlyZ) {
-			lcd_display_message_fullscreen_P(MSG_MOVE_CARRIAGE_TO_THE_TOP);
+			lcd_display_message_fullscreen_P(MSG_MOVE_CARRIAGE_TO_THE_TOP); //keep showing initial message during service mode activation
 			delay_keep_alive(500);
+			// long pressing button activates service mode 
 			if (lcd_clicked()) {
 				service_mode = true;
 				for (int i = 0; i < 5; i++) {
