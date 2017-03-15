@@ -332,5 +332,6 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 #endif
 
 extern float	distance_from_min[3];
+extern float	LS_errors[4];
 extern float	angleDiff;
 extern float	y_weigth_from_calibration[3];

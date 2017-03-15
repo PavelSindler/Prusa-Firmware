@@ -310,7 +310,7 @@ BedSkewOffsetDetectionResultType calculate_machine_skew_and_offset_LS(
     BedSkewOffsetDetectionResultType result = BED_SKEW_OFFSET_DETECTION_PERFECT;
     {
         angleDiff = fabs(a2 - a1);
-        if (angleDiff > BED_SKEW_ANGLE_MILD)
+		if (angleDiff > BED_SKEW_ANGLE_MILD)
             result = (angleDiff > BED_SKEW_ANGLE_EXTREME) ?
                 BED_SKEW_OFFSET_DETECTION_SKEW_EXTREME :
                 BED_SKEW_OFFSET_DETECTION_SKEW_MILD;
@@ -363,9 +363,16 @@ BedSkewOffsetDetectionResultType calculate_machine_skew_and_offset_LS(
             if (sqrt(errX) > BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_X ||
                 (w != 0.f && sqrt(errY) > BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_Y))
                 result = BED_SKEW_OFFSET_DETECTION_FITTING_FAILED;
+			if (w != 0) {
+				LS_errors[i] = (BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_X - sqrt(errX)) > (BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_Y - sqrt(errY)) ? (BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_Y - sqrt(errY)) : (BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_X - sqrt(errX));
+			}
+			else {
+				LS_errors[i] = (BED_CALIBRATION_POINT_OFFSET_MAX_1ST_ROW_X - sqrt(errX));
+			}
         } else {
             if (err > BED_CALIBRATION_POINT_OFFSET_MAX_EUCLIDIAN)
                 result = BED_SKEW_OFFSET_DETECTION_FITTING_FAILED;
+			LS_errors[i] = BED_CALIBRATION_POINT_OFFSET_MAX_EUCLIDIAN - err;
         }
         if (verbosity_level >= 10) {
             SERIAL_ECHOPGM("point #");

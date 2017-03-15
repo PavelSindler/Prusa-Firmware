@@ -279,6 +279,7 @@ unsigned int custom_message_type;
 unsigned int custom_message_state;
 
 float distance_from_min[3];
+float LS_errors[4];
 float angleDiff = 0;
 
 bool volumetric_enabled = false;
@@ -3469,7 +3470,7 @@ void process_commands()
                     setup_for_endstop_move();
                     home_xy();
                     result = improve_bed_offset_and_skew(1, verbosity_level, point_too_far_mask);
-                    clean_up_after_endstop_move();
+					clean_up_after_endstop_move();
                     // Print head up.
                     current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
                     plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS],current_position[Z_AXIS] , current_position[E_AXIS], homing_feedrate[Z_AXIS]/40, active_extruder);
@@ -3477,8 +3478,8 @@ void process_commands()
                     // if (result >= 0) babystep_apply();
                 }
                 lcd_bed_calibration_show_result(result, point_too_far_mask);
-				if (service_mode) lcd_service_mode_show_result();
-                if (result >= 0) {
+				if (result >= 0) {
+					if (service_mode) lcd_service_mode_show_result();
                     // Calibration valid, the machine should be able to print. Advise the user to run the V2Calibration.gcode.
                     calibration_status_store(CALIBRATION_STATUS_LIVE_ADJUST);
                     lcd_show_fullscreen_message_and_wait_P(MSG_BABYSTEP_Z_NOT_SET);

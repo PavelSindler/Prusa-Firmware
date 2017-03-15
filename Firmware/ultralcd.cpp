@@ -1783,6 +1783,21 @@ int8_t lcd_show_fullscreen_message_yes_no_and_wait_P(const char *msg, bool allow
 
 void lcd_service_mode_show_result() {
 	lcd_implementation_clear();
+	lcd_printPGM(PSTR("4 points calibration"));
+	lcd_print_at_PGM(0, 1, PSTR(" error margins:"));
+	for (int i = 0; i < 4; i++) {
+		lcd_print_at_PGM(0+(i%2)*10, 2+i/2, PSTR(""));
+		lcd.print(i);
+		lcd_printPGM(PSTR(": "));
+		lcd.print(LS_errors[i]);
+	}
+	delay_keep_alive(1000);
+	while (!lcd_clicked()) {
+		delay_keep_alive(100);
+	}
+	delay_keep_alive(500);
+	
+	lcd_implementation_clear();
 	lcd_printPGM(PSTR("Y distance from min:"));
 	lcd_print_at_PGM(0, 1, PSTR("Left:"));
 	lcd_print_at_PGM(0, 2, PSTR("Center:"));
@@ -1838,7 +1853,7 @@ void lcd_service_mode_show_result() {
 
 	lcd_implementation_clear();
 	lcd_printPGM(PSTR("Angle diff: "));
-	lcd.print(angleDiff);
+	lcd.print(angleDiff * 180/M_PI);
 	lcd_print_at_PGM(0, 1, PSTR("Mild:"));
 	lcd_print_at_PGM(9, 1, PSTR(""));
 	lcd.print(0.12);
