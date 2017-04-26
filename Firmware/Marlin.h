@@ -342,3 +342,7 @@ float temp_comp_interpolation(float temperature);
 void temp_compensation_apply();
 void temp_compensation_start();
 void wait_for_heater(long codenum);
+void comparator_setup();
+void uvlo();
+
+#define UVLO !(ACSR & (1 << ACO)) //high in case that analog comparator is low

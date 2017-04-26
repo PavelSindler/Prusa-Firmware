@@ -6475,3 +6475,23 @@ void long_pause() //long pause print
 
 	st_synchronize();
 }
+
+void comparator_setup() {
+	ADCSRB &= ~(1 << ACME); //AIN1 applied to negative input of comparator
+	ACSR =
+			(0 << ACD) |    // Analog Comparator: Enabled
+			(0 << ACBG) |   // Analog Comparator Bandgap Select: AIN0 is applied to the positive input
+			(1 << ACO) |    // Analog Comparator Output: On
+			(1 << ACI) |    // Analog Comparator Interrupt Flag: Clear Pending Interrupt
+			(1 << ACIE) |   // Analog Comparator Interrupt: Enabled
+			(0 << ACIC) |   // Analog Comparator Input Capture: Disabled
+			(1 << ACIS1) | (0 << ACIS0);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Falling Output Edge
+}
+
+void uvlo() {
+	WRITE(BEEPER, HIGH);
+}
+
+ISR(ANALOG_COMP_vect) {
+	uvlo();
+}
