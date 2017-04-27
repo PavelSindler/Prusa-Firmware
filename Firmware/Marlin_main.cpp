@@ -6489,6 +6489,10 @@ void comparator_setup() {
 }
 
 void uvlo() {
+	setTargetHotend(0, 0);
+	setTargetHotend(0, 1);
+	setTargetHotend(0, 2);
+	setTargetBed(0);
 	WRITE(BEEPER, HIGH);
 }
 
