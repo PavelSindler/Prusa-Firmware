@@ -2052,66 +2052,7 @@ void process_commands()
         // Factory full reset
         factory_reset(0,true);
         
-    }else if(code_seen("Y")) { //filaments adjustment at the beginning of print (for SNMM)
-	#ifdef SNMM
-		int extr;
-		SilentMode = eeprom_read_byte((uint8_t*)EEPROM_SILENT); //is  silent mode or loud mode set
-		lcd_implementation_clear();
-		lcd_display_message_fullscreen_P(MSG_FIL_ADJUSTING);
-		current_position[Z_AXIS] = 100; 
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 500, active_extruder); 
-		digipot_current(2, E_MOTOR_HIGH_CURRENT);
-		for (extr = 1; extr < 4; extr++) { //we dont know which filament is in nozzle, but we want to load filament0, so all other filaments must unloaded 
-			change_extr(extr);
-			ramming();			
-		}
-		change_extr(0);
-		current_position[E_AXIS] += FIL_LOAD_LENGTH; //loading filament0 into the nozzle
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 500, active_extruder);
-		st_synchronize();
-				
-		for (extr = 1; extr < 4; extr++) {	
-			digipot_current(2, E_MOTOR_LOW_CURRENT); //set lower current for extruder motors
-			change_extr(extr);
-			current_position[E_AXIS] += (FIL_LOAD_LENGTH + 3 * FIL_RETURN_LENGTH); //adjusting filaments
-			plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 5000, active_extruder);
-			st_synchronize();
-			digipot_current(2, tmp_motor_loud[2]); //set back to normal operation currents
-			current_position[E_AXIS] -= FIL_RETURN_LENGTH;
-			plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 500, active_extruder);
-			st_synchronize();
-		}
-
-		change_extr(0);
-		current_position[E_AXIS] += 25;
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 10, active_extruder);
-		digipot_current(2, E_MOTOR_HIGH_CURRENT);
-		ramming();
-		if (SilentMode == 1) digipot_current(2, tmp_motor[2]); //set back to normal operation currents
-		else digipot_current(2, tmp_motor_loud[2]);
-		st_synchronize();
-		lcd_show_fullscreen_message_and_wait_P(MSG_CONFIRM_NOZZLE_CLEAN_FIL_ADJ);
-		lcd_implementation_clear();
-		lcd_printPGM(MSG_PLEASE_WAIT);
-		current_position[Z_AXIS] = 0;
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 500, active_extruder);
-		st_synchronize();
-		lcd_update_enable(true);
-
-	#endif
-	}
-	else if (code_seen("SetF")) {
-#ifdef SNMM
-		bool not_finished = (eeprom_read_byte((unsigned char*)EEPROM_PRINT_FLAG) != PRINT_FINISHED);
-		eeprom_update_byte((unsigned char*)EEPROM_PRINT_FLAG, PRINT_STARTED);
-		if (not_finished) enquecommand_front_P(PSTR("PRUSA Y"));
-#endif
-	}
-	else if (code_seen("ResF")) {
-#ifdef SNMM
-		eeprom_update_byte((unsigned char*)EEPROM_PRINT_FLAG, PRINT_FINISHED);
-#endif
-	}
+    }
     //else if (code_seen('Cal')) {
 		//  lcd_calibration();
 	  // }
@@ -6489,11 +6430,15 @@ void comparator_setup() {
 }
 
 void uvlo() {
-	setTargetHotend(0, 0);
-	setTargetHotend(0, 1);
-	setTargetHotend(0, 2);
-	setTargetBed(0);
-	WRITE(BEEPER, HIGH);
+	while (1) {
+		//first turn off heatbed
+		DDRG |= (1 << DDG5); //set as output
+		PORTG &= ~(1 << 5); //set output low
+		//turn off nozzle
+		DDRE |= (1 << DDE5);
+		PORTE &= ~(1 << 5);
+		WRITE(BEEPER, HIGH);
+	}
 }
 
 ISR(ANALOG_COMP_vect) {
