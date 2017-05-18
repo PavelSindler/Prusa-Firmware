@@ -2405,7 +2405,11 @@ void lcd_temp_calibration_set() {
 }
 
 void lcd_calibrate_pinda() {
+#ifdef PINDA_THERMISTOR
+	enquecommand_P(PSTR("G74"));
+#else
 	enquecommand_P(PSTR("G76"));
+#endif
 	lcd_return_to_status();
 }
 
