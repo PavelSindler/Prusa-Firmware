@@ -6393,7 +6393,7 @@ void long_pause() //long pause print
 	pause_lastpos[E_AXIS] = current_position[E_AXIS];
 
 	//retract
-	current_position[E_AXIS] -= PAUSE_RETRACT;
+	current_position[E_AXIS] -= DEFAULT_RETRACTION;
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 400, active_extruder);
 
 	//lift z
@@ -6418,15 +6418,16 @@ void long_pause() //long pause print
 }
 
 void comparator_setup() {
+	
 	ADCSRB &= ~(1 << ACME); //AIN1 applied to negative input of comparator
 	ACSR =
 			(0 << ACD) |    // Analog Comparator: Enabled
-			(0 << ACBG) |   // Analog Comparator Bandgap Select: AIN0 is applied to the positive input
+			(1 << ACBG) |   // Analog Comparator Bandgap Select: bandgap voltage used applied to the positive comparator input
 			(1 << ACO) |    // Analog Comparator Output: On
 			(1 << ACI) |    // Analog Comparator Interrupt Flag: Clear Pending Interrupt
 			(1 << ACIE) |   // Analog Comparator Interrupt: Enabled
 			(0 << ACIC) |   // Analog Comparator Input Capture: Disabled
-			(1 << ACIS1) | (0 << ACIS0);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Falling Output Edge
+			(1 << ACIS1) | (1 << ACIS0);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Rising Output Edge*/
 }
 
 void uvlo() {
