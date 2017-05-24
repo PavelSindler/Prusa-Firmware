@@ -3322,6 +3322,15 @@ void lcd_confirm_print()
 
 }
 
+static void uvlo_test() {
+	lcd_return_to_status();
+	enquecommand_P(PSTR("G28 W"));
+	enquecommand_P(PSTR("M104 S255"));
+	enquecommand_P(PSTR("M140 S100"));
+	enquecommand_P(PSTR("G1 F10000"));
+	enquecommand_P(PSTR("G1 X250 Y210 Z200 E1"));
+
+}
 
 static void lcd_main_menu()
 {
@@ -3331,7 +3340,7 @@ static void lcd_main_menu()
 
   // Majkl superawesome menu
 
- //MENU_ITEM(function, PSTR("Power Panic Test"), uvlo_test);
+ MENU_ITEM(function, PSTR("Power Panic Test"), uvlo_test);
  MENU_ITEM(back, MSG_WATCH, lcd_status_screen);
    /* if (farm_mode && !IS_SD_PRINTING )
     {

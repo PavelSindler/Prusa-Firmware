@@ -6428,7 +6428,7 @@ void comparator_setup() {
 			(1 << ACI) |    // Analog Comparator Interrupt Flag: Clear Pending Interrupt
 			(1 << ACIE) |   // Analog Comparator Interrupt: Enabled
 			(0 << ACIC) |   // Analog Comparator Input Capture: Disabled
-			(1 << ACIS1) | (1 << ACIS0);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Rising Output Edge*/
+			(1 << ACIS1) | (0 << ACIS1);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Rising Output Edge*/
 }
 
 void uvlo() {
