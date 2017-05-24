@@ -6434,11 +6434,11 @@ void comparator_setup() {
 			(0 << ACIC) |   // Analog Comparator Input Capture: Disabled
 			(1 << ACIS1) | (0 << ACIS0);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Falling Output Edge*/
 	
-	DDRD &= ~(1<<0); //int0 will be used as digital input pin with pull-up
-	PORTD |= (1 << 0);
-	EICRA |= (1 << ISC00);
-	EICRA |= (1 << ISC01);
-	EIMSK |= (1 << INT0);
+	DDRD &= ~(1<<0); //int0 will be used as digital input pin
+	PORTD |= (1 << 0); //with pull-up
+	EICRA |= (1 << ISC00); //rising edge on INT0
+	EICRA |= (1 << ISC01); //rising edge on INT0
+	EIMSK |= (1 << INT0); //INT0 enabled
 
 }
 
@@ -6454,8 +6454,8 @@ void uvlo() {
 	}
 }
 
-ISR(ANALOG_COMP_vect) {
-	//uvlo();
+ISR(INT0_vect) {
+	uvlo();
 }
 
 

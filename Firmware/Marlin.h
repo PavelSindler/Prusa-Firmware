@@ -345,4 +345,6 @@ void wait_for_heater(long codenum);
 void comparator_setup();
 void uvlo();
 
-#define UVLO ~(ACSR & (1 << ACO)) // high if output from comparator is low
+//#define UVLO ~(ACSR & (1 << ACO)) // high if output from comparator is low
+
+#define UVLO (PIND & 1)

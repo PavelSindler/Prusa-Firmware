@@ -3340,8 +3340,9 @@ static void lcd_main_menu()
 
   // Majkl superawesome menu
 
- MENU_ITEM(function, PSTR("Power Panic Test"), uvlo_test);
+ 
  MENU_ITEM(back, MSG_WATCH, lcd_status_screen);
+ MENU_ITEM(function, PSTR("Power Panic Test"), uvlo_test);
    /* if (farm_mode && !IS_SD_PRINTING )
     {
     
