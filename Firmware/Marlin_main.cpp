@@ -1193,6 +1193,7 @@ void setup()
   // Store the currently running firmware into an eeprom,
   // so the next time the firmware gets updated, it will know from which version it has been updated.
   update_current_firmware_version_to_eeprom();
+  comparator_setup();
 }
 
 void trace();
