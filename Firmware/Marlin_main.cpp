@@ -6419,6 +6419,10 @@ void long_pause() //long pause print
 }
 
 void comparator_setup() {
+	/*
+	DDRE &= ~(1 << 3); //set PE3 as input 
+	PORTE |= (1 << 3); // and activate pull-up
+	MCUCR &= ~(1 << 4); //using pull-up resistors is enabled (globaly)
 	
 	ADCSRB &= ~(1 << ACME); //AIN1 applied to negative input of comparator
 	ACSR =
@@ -6428,7 +6432,14 @@ void comparator_setup() {
 			(1 << ACI) |    // Analog Comparator Interrupt Flag: Clear Pending Interrupt
 			(1 << ACIE) |   // Analog Comparator Interrupt: Enabled
 			(0 << ACIC) |   // Analog Comparator Input Capture: Disabled
-			(1 << ACIS1) | (0 << ACIS1);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Rising Output Edge*/
+			(1 << ACIS1) | (0 << ACIS0);   // Analog Comparator Interrupt Mode: Comparator Interrupt on Falling Output Edge*/
+	
+	DDRD &= ~(1<<0); //int0 will be used as digital input pin with pull-up
+	PORTD |= (1 << 0);
+	EICRA |= (1 << ISC00);
+	EICRA |= (1 << ISC01);
+	EIMSK |= (1 << INT0);
+
 }
 
 void uvlo() {
@@ -6444,5 +6455,7 @@ void uvlo() {
 }
 
 ISR(ANALOG_COMP_vect) {
-	uvlo();
+	//uvlo();
 }
+
+
