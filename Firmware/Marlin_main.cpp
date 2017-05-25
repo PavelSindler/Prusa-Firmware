@@ -6445,17 +6445,25 @@ void comparator_setup() {
 void uvlo() {
 	while (1) {
 		//first turn off heatbed
-		DDRG |= (1 << DDG5); //set as output
+		//DDRG |= (1 << DDG5); //set as output
 		PORTG &= ~(1 << 5); //set output low
 		//turn off nozzle
-		DDRE |= (1 << DDE5);
+		//DDRE |= (1 << DDE5);
 		PORTE &= ~(1 << 5);
 		WRITE(BEEPER, HIGH);
 	}
 }
 
 ISR(INT0_vect) {
-	uvlo();
+	while (1) {
+		//first turn off heatbed
+		//DDRG |= (1 << DDG5); //set as output
+		PORTG &= ~(1 << 5); //set output low
+		//turn off nozzle
+		//DDRE |= (1 << DDE5);
+		PORTE &= ~(1 << 5);
+		WRITE(BEEPER, HIGH);
+	}
 }
 
 
