@@ -1348,15 +1348,17 @@ static void lcd_move_e()
 }
 
 void lcd_service_mode_show_result() {
+	float angleDiff;
 	lcd_set_custom_characters_degree();
 	count_xyz_details();
+	angleDiff = eeprom_read_float((float*)(EEPROM_XYZ_CAL_SKEW));
 	lcd_update_enable(false);
 	lcd_implementation_clear();
 	lcd_printPGM(MSG_Y_DISTANCE_FROM_MIN);
 	lcd_print_at_PGM(0, 1, MSG_LEFT);
-	lcd_print_at_PGM(0, 2, MSG_CENTER);
-	lcd_print_at_PGM(0, 3, MSG_RIGHT);
-	for (int i = 0; i < 3; i++) {
+	//lcd_print_at_PGM(0, 2, MSG_CENTER);
+	lcd_print_at_PGM(0, 2, MSG_RIGHT);
+	for (int i = 0; i < 2; i++) {
 		if(distance_from_min[i] < 200) {
 			lcd_print_at_PGM(11, i + 1, PSTR(""));
 			lcd.print(distance_from_min[i]);
