@@ -2133,7 +2133,10 @@ bool gcode_M45(bool onlyZ, int8_t verbosity_level)
 #endif //STEEL_SHEET
 		if(!onlyZ)
 		{
+#if 0
 			KEEPALIVE_STATE(PAUSED_FOR_USER);
+
+
 #ifdef STEEL_SHEET
 			bool result = lcd_show_fullscreen_message_yes_no_and_wait_P(MSG_STEEL_SHEET_CHECK, false, false);
 #endif //STEEL_SHEET
@@ -2144,6 +2147,8 @@ bool gcode_M45(bool onlyZ, int8_t verbosity_level)
 			lcd_display_message_fullscreen_P(MSG_FIND_BED_OFFSET_AND_SKEW_LINE1);
 			lcd_implementation_print_at(0, 2, 1);
 			lcd_printPGM(MSG_FIND_BED_OFFSET_AND_SKEW_LINE2);
+
+#endif
 		}
 		// Move the print head close to the bed.
 		current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
