@@ -3446,15 +3446,30 @@ void process_commands()
 
 		if (code_seen('X')) dimension_x = code_value();
 		if (code_seen('Y')) dimension_y = code_value();
-		if (code_seen('XP')) points_x = code_value();
-		if (code_seen('YP')) points_y = code_value();
-		if (code_seen('XO')) offset_x = code_value();
-		//if (code_seen('YO')) offset_y = code_value();
-		offset_y = 158;
+		if (code_seen('A')) points_x = code_value();
+		if (code_seen('B')) points_y = code_value();
+		if (code_seen('C')) offset_x = code_value();
+		if (code_seen('D')) offset_y = code_value();
+		
+
+		SERIAL_ECHOPGM("X: ");
+		MYSERIAL.println(dimension_x);
+		SERIAL_ECHOPGM("Y: ");
+		MYSERIAL.println(dimension_y);
+		SERIAL_ECHOPGM("XP: ");
+		MYSERIAL.println(points_x);
+		SERIAL_ECHOPGM("YP: ");
+		MYSERIAL.println(points_y);
+		SERIAL_ECHOPGM("XO: ");
+		MYSERIAL.println(offset_x);
+		SERIAL_ECHOPGM("YO: ");
+		MYSERIAL.println(offset_y);
+		/*offset_y = 158;
 		SERIAL_ECHOPGM("Offset y:");
 		MYSERIAL.println(offset_y);
-		
-		bed_analysis(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
+		*/
+		//bed_analysis(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
+		bed_heigthmap(dimension_x, dimension_y, points_x, points_y, offset_x, offset_y);
 		
 	} break;
 	
@@ -7223,11 +7238,11 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 		st_synchronize();
 
-		if (!find_bed_induction_sensor_point_z(-10.f)) { //if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
+		if (!find_bed_induction_sensor_point_z(-10.f)) { //use just one iteration; if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
 			break;
 			card.closefile();
 		}
-		delay_keep_alive(300);
+		delay_keep_alive(300);// this delay is necessary when using terma micrometer with 1um resolution
 
 		//memset(numb_wldsd, 0, sizeof(numb_wldsd));
 		//dtostrf(d_ReadData(), 8, 5, numb_wldsd);
@@ -7296,12 +7311,13 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 			strcat(data_wldsd, ";");
 
 		}
+
 		memset(numb_wldsd, 0, sizeof(numb_wldsd));
 		dtostrf(output, 8, 5, numb_wldsd);
 		strcat(data_wldsd, numb_wldsd);
 		//strcat(data_wldsd, ";");
 		card.write_command(data_wldsd);
-
+		
 		
 		//row[ix] = d_ReadData();
 		
@@ -7324,6 +7340,146 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 	card.closefile();
 
 }
+
+
+void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y) {
+
+	int t1 = 0;
+	int t_delay = 0;
+	int digit[13];
+	int m;
+	char str[3];
+	//String mergeOutput;
+	char mergeOutput[15];
+	float output;
+
+	int mesh_point = 0; //index number of calibration point
+
+	float mesh_home_z_search = 4;
+	float row[x_points_num];
+	int ix = 0;
+	int iy = 0;
+
+	char* filename_wldsd = "wldsd.txt";
+	char data_wldsd[x_points_num * 6 + 1]; //6 chars(" A.BCD")for each measurement + null 
+	char numb_wldsd[7]; // (" A.BCD" + null)
+	
+	if (!(axis_known_position[X_AXIS] && axis_known_position[Y_AXIS] && axis_known_position[Z_AXIS])) {
+		// We don't know where we are! HOME!
+		// Push the commands to the front of the message queue in the reverse order!
+		// There shall be always enough space reserved for these commands.
+		repeatcommand_front(); // repeat G80 with all its parameters
+
+		enquecommand_front_P((PSTR("G28 W0")));
+		enquecommand_front_P((PSTR("G1 Z5")));
+		return;
+	}
+	bool custom_message_old = custom_message;
+	unsigned int custom_message_type_old = custom_message_type;
+	unsigned int custom_message_state_old = custom_message_state;
+	custom_message = true;
+	custom_message_type = 1;
+	custom_message_state = (x_points_num * y_points_num) + 10;
+	lcd_update(1);
+
+	mbl.reset();
+	babystep_undo();
+
+	card.openFile(filename_wldsd, false);
+
+	current_position[Z_AXIS] = mesh_home_z_search;
+	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[Z_AXIS] / 60, active_extruder);
+
+	int XY_AXIS_FEEDRATE = homing_feedrate[X_AXIS] / 20;
+	int Z_PROBE_FEEDRATE = homing_feedrate[Z_AXIS] / 60;
+	int Z_LIFT_FEEDRATE = homing_feedrate[Z_AXIS] / 40;
+
+	setup_for_endstop_move(false);
+
+	SERIAL_PROTOCOLPGM("Num X,Y: ");
+	SERIAL_PROTOCOL(x_points_num);
+	SERIAL_PROTOCOLPGM(",");
+	SERIAL_PROTOCOL(y_points_num);
+	SERIAL_PROTOCOLPGM("\nZ search height: ");
+	SERIAL_PROTOCOL(mesh_home_z_search);
+	SERIAL_PROTOCOLPGM("\nDimension X,Y: ");
+	SERIAL_PROTOCOL(x_dimension);
+	SERIAL_PROTOCOLPGM(",");
+	SERIAL_PROTOCOL(y_dimension);
+	SERIAL_PROTOCOLLNPGM("\nMeasured points:");
+
+	while (mesh_point != x_points_num * y_points_num) {
+		ix = mesh_point % x_points_num; // from 0 to MESH_NUM_X_POINTS - 1
+		iy = mesh_point / x_points_num;
+
+		SERIAL_ECHOPGM("ix: ");
+		MYSERIAL.println(ix);
+		SERIAL_ECHOPGM("iy: ");
+		MYSERIAL.println(iy);
+
+		if (iy & 1) ix = (x_points_num - 1) - ix; // Zig zag
+		float z0 = 0.f;
+		current_position[Z_AXIS] = mesh_home_z_search;
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+		st_synchronize();
+
+
+		//current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
+		//current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
+
+		current_position[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
+		current_position[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
+
+		SERIAL_ECHOPGM("X: ");
+		MYSERIAL.println(current_position[X_AXIS]);
+		SERIAL_ECHOPGM("Y: ");
+		MYSERIAL.println(current_position[Y_AXIS]);
+
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		st_synchronize();
+
+		if (!find_bed_induction_sensor_point_z(-10.f, 1)) { //use just one iteration; if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
+			break;
+			card.closefile();
+		}	
+/*
+		memset(data_wldsd, 0, sizeof(data_wldsd));
+		dtostrf(current_position[2], 6, 3, numb_wldsd);
+		strcat(data_wldsd, numb_wldsd);
+
+		memset(numb_wldsd, 0, sizeof(numb_wldsd));
+		dtostrf(output, 8, 5, numb_wldsd);
+		strcat(data_wldsd, numb_wldsd);
+		//strcat(data_wldsd, ";");
+		card.write_command(data_wldsd);
+*/
+
+		//row[ix] = d_ReadData();
+
+		row[ix] = current_position[Z_AXIS];
+
+		if (iy % 2 == 1 ? ix == 0 : ix == x_points_num - 1) {
+			memset(data_wldsd, 0, sizeof(data_wldsd));
+			for (int i = 0; i < x_points_num; i++) {
+				SERIAL_PROTOCOLPGM(" ");
+				SERIAL_PROTOCOL_F(row[i], 5);
+				memset(numb_wldsd, 0, sizeof(numb_wldsd));
+				dtostrf(row[i], 6, 3, numb_wldsd);
+				strcat(data_wldsd, numb_wldsd);
+			}
+			card.write_command(data_wldsd);
+			SERIAL_PROTOCOLPGM("\n");
+
+		}
+		custom_message_state--;
+		mesh_point++;
+		lcd_update(1);
+
+	}
+	card.closefile();
+
+}
+
 #endif
 
 void temp_compensation_start() {
