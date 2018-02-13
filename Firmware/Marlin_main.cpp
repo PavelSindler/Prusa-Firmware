@@ -1256,6 +1256,8 @@ void setup()
       } 
 	   
   }
+  LOGIC_ANALYZER_CH0_ENABLE;
+  LOGIC_ANALYZER_CH1_ENABLE;
   KEEPALIVE_STATE(NOT_BUSY);
   wdt_enable(WDTO_4S);
 }
@@ -7634,9 +7636,13 @@ ISR(INT7_vect) {
 	if (fanSpeed < MIN_PRINT_FAN_SPEED) return;
 	if ((1 << 6) & EICRB) { //interrupt was triggered by rising edge
 		t_fan_rising_edge = millis_nc();
+		WRITE_NC(LOGIC_ANALYZER_CH0, true);
+		WRITE_NC(LOGIC_ANALYZER_CH1, true);
 	}
 	else { //interrupt was triggered by falling edge
+		WRITE_NC(LOGIC_ANALYZER_CH0, false);
 		if ((millis_nc() - t_fan_rising_edge) >= FAN_PULSE_WIDTH_LIMIT) {//this pulse was from sensor and not from pwm
+			WRITE_NC(LOGIC_ANALYZER_CH1, false);
 			fan_edge_counter[1] += 2; //we are currently counting all edges so lets count two edges for one pulse
 		}
 	}	
