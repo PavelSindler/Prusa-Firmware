@@ -1272,7 +1272,10 @@ void setup()
 	   
   }
 #endif //UVLO_SUPPORT
-
+  /*pinMode(D_DATACLOCK, INPUT_PULLUP);
+  pinMode(D_DATA, OUTPUT);
+  digitalWrite(D_DATA, HIGH);
+  pinMode(D_REQUIRE, INPUT_PULLUP);*/
   KEEPALIVE_STATE(NOT_BUSY);
   wdt_enable(WDTO_4S);
 }
@@ -1396,8 +1399,8 @@ void host_keepalive() {
      switch (busy_state) {
       case IN_HANDLER:
       case IN_PROCESS:
-        SERIAL_ECHO_START;
-        SERIAL_ECHOLNPGM("busy: processing");
+        //SERIAL_ECHO_START;
+        //SERIAL_ECHOLNPGM("busy: processing");
         break;
       case PAUSED_FOR_USER:
         SERIAL_ECHO_START;
@@ -3432,6 +3435,8 @@ void process_commands()
 
 		//G77 X232 Y218 XP116 YP109 XO-11 YO0 
 
+		//G77 X43 Y50 XP3 YP3 XO168 YO154
+
 		float dimension_x = 40;
 		float dimension_y = 40;
 		int points_x = 40;
@@ -3444,7 +3449,10 @@ void process_commands()
 		if (code_seen('XP')) points_x = code_value();
 		if (code_seen('YP')) points_y = code_value();
 		if (code_seen('XO')) offset_x = code_value();
-		if (code_seen('YO')) offset_y = code_value();
+		//if (code_seen('YO')) offset_y = code_value();
+		offset_y = 158;
+		SERIAL_ECHOPGM("Offset y:");
+		MYSERIAL.println(offset_y);
 		
 		bed_analysis(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
 		
@@ -7219,7 +7227,7 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 			break;
 			card.closefile();
 		}
-
+		delay_keep_alive(300);
 
 		//memset(numb_wldsd, 0, sizeof(numb_wldsd));
 		//dtostrf(d_ReadData(), 8, 5, numb_wldsd);
@@ -7240,17 +7248,17 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 		
 		for (int i = 0; i<13; i++)
 		{
-			//t1 = millis();
+			t1 = millis();
 			for (int j = 0; j < 4; j++)
 			{
-				while (digitalRead(D_DATACLOCK) == LOW) {}				
+				while (digitalRead(D_DATACLOCK) == LOW) {}	
 				while (digitalRead(D_DATACLOCK) == HIGH) {}
 				bitWrite(digit[i], j, digitalRead(D_DATA));
 			}
-			//t_delay = (millis() - t1);
-			//SERIAL_PROTOCOLPGM(" ");
-			//SERIAL_PROTOCOL_F(t_delay, 5);
-			//SERIAL_PROTOCOLPGM(" ");
+//			t_delay = (millis() - t1);
+//			SERIAL_PROTOCOLPGM(" ");
+//			SERIAL_PROTOCOL_F(t_delay, 5);
+//			SERIAL_PROTOCOLPGM(" ");
 		}
 		//sei();
 		digitalWrite(D_REQUIRE, HIGH);

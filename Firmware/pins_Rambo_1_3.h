@@ -42,7 +42,7 @@
 #define Z_STEP_PIN             35
 #define Z_DIR_PIN              47
 #define Z_MIN_PIN              10
-#define Z_MAX_PIN              23
+#define Z_MAX_PIN              -1
 #define Z_ENABLE_PIN           27
 #define Z_MS1_PIN              68
 #define Z_MS2_PIN              67
@@ -85,7 +85,7 @@
 #define PS_ON_PIN           -1
 #define KILL_PIN            -1  // 80 with Smart Controller LCD
 #define SUICIDE_PIN         -1  // PIN that has to be turned on right after start, to keep power flowing.
-#define TACH_0				30	// noctua extruder fan
+#define TACH_0				-1	// noctua extruder fan
 
 #ifdef ULTRA_LCD
 
@@ -108,9 +108,16 @@
 
 #define SDCARDDETECT           15
 
-
 #endif //NEWPANEL
 #endif //ULTRA_LCD
+
+#ifdef DIS
+
+#define D_DATACLOCK		24	//green, Y_MAX, scope CH2
+#define D_DATA			30	//blue, X_MAX (P3-PIN3 (TX2)) scope CH1
+#define D_REQUIRE		23	//white, Z_MAX
+
+#endif //DIS
 
 // Support for an 8 bit logic analyzer, for example the Saleae.
 // Channels 0-2 are fast, they could generate 2.667Mhz waveform with a software loop.
