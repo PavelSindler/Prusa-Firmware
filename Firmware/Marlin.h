@@ -373,7 +373,9 @@ extern void long_pause();
 void d_setup();
 float d_ReadData();
 void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y);
+#if 1
 void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y);
+#endif
 
 #endif
 float temp_comp_interpolation(float temperature);

@@ -162,6 +162,8 @@ enum BedSkewOffsetDetectionResultType {
 
 extern BedSkewOffsetDetectionResultType find_bed_offset_and_skew(int8_t verbosity_level, uint8_t &too_far_mask);
 extern BedSkewOffsetDetectionResultType improve_bed_offset_and_skew(int8_t method, int8_t verbosity_level, uint8_t &too_far_mask);
+extern void bed_bitmap(uint8_t index, uint8_t verbosity_level);
+extern void bed_bitmap_to_file(float z_threshold, float z_position, float x_position, float y_position, float x_size, float y_size, int verbosity_level);
 
 extern bool sample_mesh_and_store_reference();
 

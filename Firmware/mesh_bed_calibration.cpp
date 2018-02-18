@@ -6,6 +6,7 @@
 #include "mesh_bed_leveling.h"
 #include "stepper.h"
 #include "ultralcd.h"
+#include "cardreader.h"
 
 uint8_t world2machine_correction_mode;
 float   world2machine_rotation_and_skew[2][2];
@@ -905,6 +906,7 @@ error:
 #define FIND_BED_INDUCTION_SENSOR_POINT_Y_RADIUS (4.f)
 #define FIND_BED_INDUCTION_SENSOR_POINT_XY_STEP  (1.f)
 #define FIND_BED_INDUCTION_SENSOR_POINT_Z_STEP   (0.2f)
+
 inline bool find_bed_induction_sensor_point_xy(int verbosity_level)
 {
 	#ifdef SUPPORT_VERBOSITY
@@ -1796,6 +1798,323 @@ inline void scan_bed_induction_sensor_point()
 
 #define MESH_BED_CALIBRATION_SHOW_LCD
 
+void bed_bitmap(uint8_t index, uint8_t verbosity_level) {
+
+	float feedrate = homing_feedrate[X_AXIS] / 60.f;
+	
+
+	//--------------------------------------------------------first home and go to approximate measurement point position------------------------------------------------
+
+	if (!(axis_known_position[X_AXIS] && axis_known_position[Y_AXIS] && axis_known_position[Z_AXIS])) {
+		// We don't know where we are! HOME!
+		// Push the commands to the front of the message queue in the reverse order!
+		// There shall be always enough space reserved for these commands.
+		repeatcommand_front(); // repeat G80 with all its parameters
+
+		enquecommand_front_P((PSTR("G1 Z5")));
+		enquecommand_front_P((PSTR("G28 W0")));
+		enquecommand_front_P((PSTR("G1 Z5")));
+		return;
+	}
+
+	current_position[X_AXIS] = pgm_read_float(bed_ref_points_4 + index * 2);
+	current_position[Y_AXIS] = pgm_read_float(bed_ref_points_4 + index * 2 + 1);
+	go_to_current(feedrate);
+
+	//--------------------------------------------------------start seeking for first hit to determine Z coordinate-----------------------------------------------------
+
+	float x0 = current_position[X_AXIS] - FIND_BED_INDUCTION_SENSOR_POINT_X_RADIUS;
+	float x1 = current_position[X_AXIS] + FIND_BED_INDUCTION_SENSOR_POINT_X_RADIUS;
+	float y0 = current_position[Y_AXIS] - FIND_BED_INDUCTION_SENSOR_POINT_Y_RADIUS;
+	float y1 = current_position[Y_AXIS] + FIND_BED_INDUCTION_SENSOR_POINT_Y_RADIUS;
+	uint8_t nsteps_y;
+	uint8_t i;
+	if (x0 < X_MIN_POS) {
+		x0 = X_MIN_POS;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("X searching radius lower than X_MIN. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	if (x1 > X_MAX_POS) {
+		x1 = X_MAX_POS;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("X searching radius higher than X_MAX. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	if (y0 < Y_MIN_POS_FOR_BED_CALIBRATION) {
+		y0 = Y_MIN_POS_FOR_BED_CALIBRATION;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("Y searching radius lower than Y_MIN. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	if (y1 > Y_MAX_POS) {
+		y1 = Y_MAX_POS;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("Y searching radius higher than X_MAX. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	nsteps_y = int(ceil((y1 - y0) / FIND_BED_INDUCTION_SENSOR_POINT_XY_STEP));
+
+	enable_endstops(false);
+	bool  dir_positive = true;
+
+	//        go_xyz(current_position[X_AXIS], current_position[Y_AXIS], MESH_HOME_Z_SEARCH, homing_feedrate[Z_AXIS]/60);
+	go_xyz(x0, y0, current_position[Z_AXIS], feedrate);
+	// Continously lower the Z axis.
+	endstops_hit_on_purpose();
+	enable_z_endstop(true);
+	while (current_position[Z_AXIS] > -10.f) {
+		// Do nsteps_y zig-zag movements.
+		current_position[Y_AXIS] = y0;
+		for (i = 0; i < (nsteps_y - 1); current_position[Y_AXIS] += (y1 - y0) / float(nsteps_y - 1), ++i) {
+			MYSERIAL.println(current_position[Y_AXIS]);
+			// Run with a slightly decreasing Z axis, zig-zag movement. Stop at the Z end-stop.
+			current_position[Z_AXIS] -= FIND_BED_INDUCTION_SENSOR_POINT_Z_STEP / float(nsteps_y);
+			go_xyz(dir_positive ? x1 : x0, current_position[Y_AXIS], current_position[Z_AXIS], feedrate);
+			dir_positive = !dir_positive;
+			if (endstop_z_hit_on_purpose())
+				goto endloop_bitmap;
+		}
+		for (i = 0; i < (nsteps_y - 1); current_position[Y_AXIS] -= (y1 - y0) / float(nsteps_y - 1), ++i) {
+			MYSERIAL.println(current_position[Y_AXIS]);
+			// Run with a slightly decreasing Z axis, zig-zag movement. Stop at the Z end-stop.
+			current_position[Z_AXIS] -= FIND_BED_INDUCTION_SENSOR_POINT_Z_STEP / float(nsteps_y);
+			go_xyz(dir_positive ? x1 : x0, current_position[Y_AXIS], current_position[Z_AXIS], feedrate);
+			dir_positive = !dir_positive;
+			if (endstop_z_hit_on_purpose())
+				goto endloop_bitmap;
+		}
+		SERIAL_ECHOLNPGM("--------------");
+	}
+endloop_bitmap:
+	SERIAL_ECHOLNPGM("First hit");
+	SERIAL_ECHOPGM("Y: ");
+	MYSERIAL.println(current_position[Y_AXIS]);
+	SERIAL_ECHOPGM("Z: ");
+	MYSERIAL.println(current_position[Z_AXIS]);
+
+	// we have to let the planner know where we are right now as it is not where we said to go.
+	update_current_position_xyz();
+
+	//-----------------------------------------------------------we have first hit XYZ coordinates. Now create bitmaps for different Z, different methods and different area--------------------------------------------
+
+	float first_hit_z_position = current_position[Z_AXIS];
+	float first_hit_x_position = current_position[X_AXIS];
+	float first_hit_y_position = current_position[Y_AXIS];
+
+	for (uint8_t iter = 0; iter < 3; ++iter) {
+		//uint8_t iter = 2;
+		
+		SERIAL_ECHOPGM("iter: ");
+		MYSERIAL.println(iter);
+
+		//current_position[Z_AXIS] -= 0.02f;
+		//go_to_current();
+		bed_bitmap_to_file(first_hit_z_position - 0.08f * iter, first_hit_z_position, first_hit_x_position, first_hit_y_position, 30.0f, 30.0f, 30);
+					
+	}
+
+}
+
+void bed_bitmap_to_file(float z_threshold, float z_position, float x_position, float y_position, float x_size, float y_size, int verbosity_level) {
+
+	char filename_wldsd[11];
+	char numb_z_thr [5];
+
+	memset(numb_z_thr, 0, sizeof(numb_z_thr));
+	dtostrf(z_threshold, 1, 2, numb_z_thr);
+	numb_z_thr[1] = 'p';
+
+	strcpy(filename_wldsd, "bm");
+	strcat(filename_wldsd, numb_z_thr);
+	strcat(filename_wldsd, ".txt");
+
+	MYSERIAL.println(filename_wldsd);
+
+
+
+	//char* filename_wldsd = "wldsd.txt";
+	float x0, y0, x1, y1;
+	float init_z_position;
+	//float z_stop_position = -10;
+	uint8_t nx, ny;
+	int mesh_point = 0; //index number of calibration point
+	int ix = 0;
+	int iy = 0;
+
+	int XY_AXIS_FEEDRATE = homing_feedrate[X_AXIS] / 20;
+	int Z_PROBE_FEEDRATE = homing_feedrate[Z_AXIS] / 60;
+	int Z_LIFT_FEEDRATE = homing_feedrate[Z_AXIS] / 40;
+
+	bool custom_message_old = custom_message;
+	unsigned int custom_message_type_old = custom_message_type;
+	unsigned int custom_message_state_old = custom_message_state;
+	custom_message = true;
+	custom_message_type = 1;
+	
+	lcd_update(1);
+
+	mbl.reset();
+	babystep_undo();
+
+	card.openFile(filename_wldsd, false);
+
+	current_position[Z_AXIS] = z_position + 1; //go 1mm higher to make sure that probe is turned off
+/*
+
+	SERIAL_ECHOPGM("Z feedrate: ");
+	MYSERIAL.println(Z_PROBE_FEEDRATE);
+	SERIAL_ECHOPGM("XY feedrate: ");
+	MYSERIAL.println(XY_AXIS_FEEDRATE);
+	SERIAL_ECHOPGM("Z lift feedrate: ");
+	MYSERIAL.println(Z_LIFT_FEEDRATE);
+
+*/ 
+
+	go_to_current(float(Z_PROBE_FEEDRATE));
+	init_z_position = current_position[Z_AXIS];
+
+	//lets use 1mm step for simplicity
+
+	x0 = x_position - x_size / 2;
+	x1 = x0 + x_size;
+	y0 = y_position - y_size / 2;
+	y1 = y0 + y_size;
+
+	if (x0 < X_MIN_POS) {
+		x0 = X_MIN_POS;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("X searching radius lower than X_MIN. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	if (y0 < Y_MIN_POS_FOR_BED_CALIBRATION) {
+		y0 = Y_MIN_POS_FOR_BED_CALIBRATION;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("Y searching radius lower than Y_MIN. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	if (x1 > X_MAX_POS) {
+		x1 = X_MAX_POS;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("X searching radius higher than X_MAX. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+	if (y1 > Y_MAX_POS) {
+		y1 = Y_MAX_POS;
+#ifdef SUPPORT_VERBOSITY
+		if (verbosity_level >= 20) SERIAL_ECHOLNPGM("Y searching radius higher than X_MAX. Clamping was done.");
+#endif // SUPPORT_VERBOSITY
+	}
+
+	//now recalculate number of points in 1mm rastr:
+	nx = x1 - x0;
+	ny = y1 - y0;
+
+	custom_message_state = (nx * ny) + 10;
+
+
+	SERIAL_ECHOPGM("nx: ");
+	MYSERIAL.println(int(nx));
+	SERIAL_ECHOPGM("ny: ");
+	MYSERIAL.println(int(ny));
+
+	char data_wldsd[nx * 2 + 1]; //nx*(bool value + " ") + null 
+	char numb_wldsd[2]; // (bool + null)
+
+	float x_dimension = x1 - x0;
+	float y_dimension = y1 - y0;
+
+	bool row[nx];
+
+
+	while (mesh_point != nx * ny) {
+		ix = mesh_point % nx; // from 0 to MESH_NUM_X_POINTS - 1
+		iy = mesh_point / nx;
+
+		SERIAL_ECHOPGM("ix: ");
+		MYSERIAL.println(ix);
+		SERIAL_ECHOPGM("iy: ");
+		MYSERIAL.println(iy);
+
+		if (iy & 1) ix = (nx - 1) - ix; // Zig zag
+
+		/*SERIAL_ECHOPGM("X: ");
+		MYSERIAL.println(current_position[X_AXIS]);
+		SERIAL_ECHOPGM("Y: ");
+		MYSERIAL.println(current_position[Y_AXIS]);
+		SERIAL_ECHOPGM("Z: ");
+		MYSERIAL.println(current_position[Z_AXIS]);
+		SERIAL_ECHOLNPGM("---");
+		*/
+
+		enable_endstops(false);
+		enable_z_endstop(false);
+		current_position[Z_AXIS] += 1; //just little bit higher because of probe hysteresis
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], float(Z_LIFT_FEEDRATE), active_extruder);
+
+		st_synchronize();
+		if (endstop_z_hit_on_purpose()) SERIAL_ECHOPGM("Z ENDSTOP HIT");
+
+		current_position[X_AXIS] = ix * (x_dimension / (nx - 1)) + x0;
+		current_position[Y_AXIS] = iy * (y_dimension / (ny - 1)) + y0;
+/*
+		SERIAL_ECHOPGM("X: ");
+		MYSERIAL.println(current_position[X_AXIS]);
+		SERIAL_ECHOPGM("Y: ");
+		MYSERIAL.println(current_position[Y_AXIS]);
+		SERIAL_ECHOPGM("Z: ");
+		MYSERIAL.println(current_position[Z_AXIS]);
+		SERIAL_ECHOLNPGM("---");
+*/
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], float(XY_AXIS_FEEDRATE), active_extruder);
+		st_synchronize();
+		if (endstop_z_hit_on_purpose()) SERIAL_ECHOPGM("Z ENDSTOP HIT");
+		if (endstops_hit_on_purpose()) SERIAL_ECHOPGM("ENDSTOP HIT");
+		
+		if (!find_bed_induction_sensor_point_z(z_threshold - 0.1, 1)) { //use just one iteration; if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
+			//using z_threshold - 0.5 to shorten range and fasten calibration process
+		}
+
+		update_current_position_z(); //to update current position because
+		enable_endstops(false);
+		enable_z_endstop(false);
+
+		/*SERIAL_ECHOPGM("X: ");
+		MYSERIAL.println(current_position[X_AXIS]);
+		SERIAL_ECHOPGM("Y: ");
+		MYSERIAL.println(current_position[Y_AXIS]);
+		SERIAL_ECHOPGM("Z: ");
+		MYSERIAL.println(current_position[Z_AXIS]);
+		SERIAL_ECHOLNPGM("---");
+		*/
+
+		row[ix] = (current_position[Z_AXIS] > z_threshold);
+
+		if (iy % 2 == 1 ? ix == 0 : ix == nx - 1) {
+			memset(data_wldsd, 0, sizeof(data_wldsd));
+			for (int i = 0; i < nx; i++) {
+				SERIAL_PROTOCOLPGM(" ");
+				MYSERIAL.print(int(row[i]));
+				memset(numb_wldsd, 0, sizeof(numb_wldsd));
+				//dtostrf(row[i], 2, 0, numb_wldsd);
+				//numb_wldsd = (row[i]) ? "1 " : "0  ";
+				row[i] ? strcpy(numb_wldsd, "1 ") : strcpy(numb_wldsd, "0 ");
+
+				strcat(data_wldsd, numb_wldsd);
+			}
+			card.write_command(data_wldsd);
+			SERIAL_PROTOCOLPGM("\n");
+
+		}
+		custom_message_state--;
+		mesh_point++;
+		lcd_update(1);
+
+	}
+	card.closefile();
+
+}
+
 BedSkewOffsetDetectionResultType find_bed_offset_and_skew(int8_t verbosity_level, uint8_t &too_far_mask)
 {	
     // Don't let the manage_inactivity() function remove power from the motors.
@@ -1852,7 +2171,7 @@ BedSkewOffsetDetectionResultType find_bed_offset_and_skew(int8_t verbosity_level
 
     // Collect the rear 2x3 points.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH + FIND_BED_INDUCTION_SENSOR_POINT_Z_STEP * iteration * 0.3;
-	for (int k = 2; k < 4; ++k) {
+	for (int k = 0; k < 4; ++k) {
 		// Don't let the manage_inactivity() function remove power from the motors.
 		refresh_cmd_timeout();
 #ifdef MESH_BED_CALIBRATION_SHOW_LCD

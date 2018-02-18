@@ -3426,6 +3426,7 @@ void process_commands()
 	break;
 
 #ifdef DIS
+#if 1
 	case 77:
 	{
 		//G77 X200 Y150 XP100 YP15 XO10 Y015
@@ -3470,8 +3471,54 @@ void process_commands()
 		*/
 		//bed_analysis(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
 		bed_heigthmap(dimension_x, dimension_y, points_x, points_y, offset_x, offset_y);
-		
+
 	} break;
+#endif	
+	case 78: {
+		float dimension_x = 40;
+		float dimension_y = 40;
+		int points_x = 40;
+		int points_y = 40;
+		uint8_t index = 1;
+		
+		if (code_seen('I')) index = code_value();
+		if (code_seen('X')) dimension_x = code_value();
+		if (code_seen('Y')) dimension_y = code_value();
+		if (code_seen('A')) points_x = code_value();
+		if (code_seen('B')) points_y = code_value();
+		
+		SERIAL_ECHOPGM("I: ");
+		MYSERIAL.println(int(index));
+		SERIAL_ECHOPGM("X: ");
+		MYSERIAL.println(dimension_x);
+		SERIAL_ECHOPGM("Y: ");
+		MYSERIAL.println(dimension_y);
+		SERIAL_ECHOPGM("XP: ");
+		MYSERIAL.println(points_x);
+		SERIAL_ECHOPGM("YP: ");
+		MYSERIAL.println(points_y);
+		
+		/*float z_threshold = 0.13512;
+		char filename_wldsd[11];
+		char numb_z_thr[5];
+
+		memset(numb_z_thr, 0, sizeof(numb_z_thr));
+		dtostrf(z_threshold, 1, 2, numb_z_thr);
+		numb_z_thr[1] = 'p';
+
+		strcpy(filename_wldsd, "bm");
+		strcat(filename_wldsd, numb_z_thr);
+		strcat(filename_wldsd, ".txt");
+
+		MYSERIAL.println(filename_wldsd);
+		card.openFile(filename_wldsd, false);
+		card.closefile();*/
+
+		//bed_bitmap(index, 20);
+		//bed_bitmap_to_file(current_position[Z_AXIS] - 0.04f, 30, 30, 30);
+	} break;
+
+
 	
 #endif
 
@@ -7342,6 +7389,7 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 }
 
 
+#if 1
 void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y) {
 
 	int t1 = 0;
@@ -7352,6 +7400,7 @@ void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y
 	//String mergeOutput;
 	char mergeOutput[15];
 	float output;
+	float min_z_limit = -10.f;
 
 	int mesh_point = 0; //index number of calibration point
 
@@ -7423,7 +7472,6 @@ void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y
 		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
 		st_synchronize();
 
-
 		//current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
 		//current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
 
@@ -7438,10 +7486,11 @@ void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y
 		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 		st_synchronize();
 
-		if (!find_bed_induction_sensor_point_z(-10.f, 1)) { //use just one iteration; if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
-			break;
-			card.closefile();
+		if (!find_bed_induction_sensor_point_z(min_z_limit, 1)) { //use just one iteration; if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
+			//break;
+			//card.closefile();
 		}	
+		//if (ix == 0 && iy == 0) min_z_limit = current_position[Z_AXIS] - 0.5;
 /*
 		memset(data_wldsd, 0, sizeof(data_wldsd));
 		dtostrf(current_position[2], 6, 3, numb_wldsd);
@@ -7479,6 +7528,7 @@ void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y
 	card.closefile();
 
 }
+#endif
 
 #endif
 
