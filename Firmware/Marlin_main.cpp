@@ -7490,7 +7490,7 @@ void bed_heigthmap(float x_dimension, float y_dimension, int x_points_num, int y
 			//break;
 			//card.closefile();
 		}	
-		//if (ix == 0 && iy == 0) min_z_limit = current_position[Z_AXIS] - 0.5;
+		if (ix == 0 && iy == 0) min_z_limit = current_position[Z_AXIS] - 0.7;
 /*
 		memset(data_wldsd, 0, sizeof(data_wldsd));
 		dtostrf(current_position[2], 6, 3, numb_wldsd);
