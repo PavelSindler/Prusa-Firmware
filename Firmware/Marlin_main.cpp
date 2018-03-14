@@ -1035,7 +1035,7 @@ void setup()
 		prusa_statistics(8);
 		no_response = true; //we need confirmation by recieving PRUSA thx
 		important_status = 8;
-        selectedSerialPort = 1;
+        selectedSerialPort = 0;
 	} else {
         selectedSerialPort = 0;
     }
