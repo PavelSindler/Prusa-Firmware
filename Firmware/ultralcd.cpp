@@ -5377,6 +5377,13 @@ void extr_unload() { //unloads filament
 		current_position[E_AXIS] -= 80;
 		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 2500 / 60, active_extruder);
 		st_synchronize();
+
+		//disable extruder steppers so filament can be removed by mmu in case that it is not fully unloaded (above bondtechs)
+		disable_e0();
+		disable_e1();
+		disable_e2();
+		delay(100);
+
 		printf_P(PSTR("U0\n"));
 		fprintf_P(uart2io, PSTR("U0\n"));
 
