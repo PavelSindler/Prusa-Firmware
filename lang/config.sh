@@ -5,7 +5,7 @@
 #  This file is 'included' in all scripts.
 #
 # Arduino main folder:
-export ARDUINO=C:/arduino-1.6.8
+export ARDUINO=C:/arduino-1.6.8/arduino-1.6.8
 #
 # Arduino builder:
 export BUILDER=$ARDUINO/arduino_debug.exe

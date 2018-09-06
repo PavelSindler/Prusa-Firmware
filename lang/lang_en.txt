@@ -826,3 +826,82 @@
 #MSG_WIZARD_QUIT c=20 r=8
 "You can always resume the Wizard from Calibration -> Wizard."
 
+#MSG_AUTO_DEPLETE_OFF c=17 r=1
+Auto deplete[off]
+
+#MSG_AUTO_DEPLETE_ON c=17 r=1
+Auto deplete [on]
+
+#MSG_EJECT_FILAMENT c=17 r=1
+Eject filament
+
+#MSG_EJECT_FILAMENT1 c=17 r=1
+Eject filament 1
+
+#MSG_EJECTING_FILAMENT c=20 r=1
+Ejecting filament
+
+#MSG_EXTRUDER1_MSG c=19 r=1
+Extruder 1
+
+#MSG_FILAMENT_USED c=19 r=1
+Filament used
+
+#MSG_RESPONSE_POOR c=20 r=2
+Fil. sensor response is poor, disable it?
+
+#MSG_LOAD_ALL c=17 r=1
+Load all
+
+#MSG_LOAD_FILAMENT1 c=17 r=1
+Load filament 1
+
+#MSG_MMU_NEEDS_ATTENTION c=20 r=4
+MMU needs user attention. Fix the issue and then press button on MMU unit.
+
+#MSG_MMU_OK_RESUMING c=20 r=4
+MMU OK. Resuming...
+
+#MSG_MMU_OK_RESUMING_POSITION c=20 r=4
+MMU OK. Resuming position...
+
+#MSG_MMU_OK_RESUMING_TEMPERATURE c=20 r=4
+MMU OK. Resuming temperature...
+
+#MSG_EJECT_REMOVE c=20 r=4
+Please remove filament and then press the knob.
+
+#MSG_RUN_XYZ c=20 r=4
+Please run XYZ calibration first.
+
+#MSG_UPDATE_MMU2_FW c=20 r=4
+Please update firmware in your MMU2. Waiting for reset.
+
+#MSG_REMOVE_OLD_FILAMENT c=20 r=4
+Remove old filament and press the knob to start loading new filament.
+
+#MSG_SORT_ALPHA c=17 r=1
+Sort:  [alphabet]
+
+#MSG_SORT_NONE c=17 r=1
+Sort:  [none]
+
+#MSG_SORT_TIME c=17 r=1
+Sort:  [time]
+
+#MSG_SOUND_LOUD c=17 r=1
+Sound      [loud]
+
+#MSG_SOUND_MUTE c=17 r=1
+Sound      [mute]
+
+#MSG_SOUND_ONCE c=17 r=1
+Sound      [once]
+
+#MSG_SOUND_SILENT c=17 r=1
+Sound    [silent]
+
+#MSG_FOLLOW_Z_CALIBRATION_FLOW c=20 r=4
+There is still a need to make Z calibration. Please follow the manual, chapter First steps, section Calibration flow.
+
+
