@@ -8527,7 +8527,7 @@ ISR(INT4_vect) {
 	EIMSK &= ~(1 << 4); //disable INT4 interrupt to make sure that this code will be executed just once 
 	SERIAL_ECHOLNPGM("INT4");
      if(IS_SD_PRINTING && (!(eeprom_read_byte((uint8_t*)EEPROM_UVLO))) ) uvlo_();
-     if(eeprom_read_byte((uint8_t*)EEPROM_UVLO)) uvlo_tiny();
+     if((eeprom_read_byte((uint8_t*)EEPROM_UVLO)==1) || (eeprom_read_byte((uint8_t*)EEPROM_UVLO)==2)) uvlo_tiny();
 }
 
 void recover_print(uint8_t automatic) {
