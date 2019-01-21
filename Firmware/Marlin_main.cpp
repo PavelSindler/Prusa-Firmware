@@ -1706,8 +1706,8 @@ void host_keepalive() {
      switch (busy_state) {
       case IN_HANDLER:
       case IN_PROCESS:
-        SERIAL_ECHO_START;
-        SERIAL_ECHOLNPGM("busy: processing");
+        //SERIAL_ECHO_START;
+       // SERIAL_ECHOLNPGM("busy: processing");
         break;
       case PAUSED_FOR_USER:
         SERIAL_ECHO_START;
@@ -4296,15 +4296,20 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 		float offset_x = 74;
 		float offset_y = 33;
 
-		if (code_seen('X')) dimension_x = code_value();
-		if (code_seen('Y')) dimension_y = code_value();
-		if (code_seen("XP")) { strchr_pointer+=1; points_x = code_value(); }
-		if (code_seen("YP")) { strchr_pointer+=1; points_y = code_value(); }
-		if (code_seen("XO")) { strchr_pointer+=1; offset_x = code_value(); }
-		if (code_seen("YO")) { strchr_pointer+=1; offset_y = code_value(); }
-		
+		if (code_seen('A')) dimension_x = code_value();
+		if (code_seen('B')) dimension_y = code_value();
+		if (code_seen('C')) { /*strchr_pointer+=1; */points_x = code_value(); }
+		if (code_seen('D')) { /*strchr_pointer+=1; */points_y = code_value(); }
+		if (code_seen('E')) { /*strchr_pointer+=1; */offset_x = code_value(); }
+		if (code_seen('F')) { /*strchr_pointer+=1; */offset_y = code_value(); }
+		printf_P(PSTR("DIM X: %f\n"), dimension_x);
+		printf_P(PSTR("DIM Y: %f\n"), dimension_y);
+		printf_P(PSTR("POINTS X: %d\n"), points_x);
+		printf_P(PSTR("POINTS Y: %d\n"), points_y);
+		printf_P(PSTR("OFFSET X: %f\n"), offset_x);
+		printf_P(PSTR("OFFSET Y: %f\n"), offset_y);
 		bed_analysis(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
-		
+		//bed_analysis(20,dimension_y,points_x,points_y,offset_x,offset_y);
 	} break;
 	
 #endif
@@ -7883,6 +7888,7 @@ void check_babystep()
 	}	
 }
 #ifdef DIS
+#ifdef MICROMETER_LOGGING
 void d_setup()
 {	
 	pinMode(D_DATACLOCK, INPUT_PULLUP);
@@ -7890,7 +7896,6 @@ void d_setup()
 	pinMode(D_REQUIRE, OUTPUT);
 	digitalWrite(D_REQUIRE, HIGH);
 }
-
 
 float d_ReadData()
 {
@@ -7932,6 +7937,8 @@ float d_ReadData()
 
 }
 
+#endif //MICROMETER_LOGGING
+
 void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y) {
 	int t1 = 0;
 	int t_delay = 0;
@@ -7954,9 +7961,9 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 	const char* filename_wldsd = "wldsd.txt";
 	char data_wldsd[70];
 	char numb_wldsd[10];
-
+#ifdef MICROMETER_LOGGING
 	d_setup();
-
+#endif //MICROMETER_LOGGING
 	if (!(axis_known_position[X_AXIS] && axis_known_position[Y_AXIS] && axis_known_position[Z_AXIS])) {
 		// We don't know where we are! HOME!
 		// Push the commands to the front of the message queue in the reverse order!
@@ -8018,7 +8025,7 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 			break;
 			card.closefile();
 		}
-
+#ifdef MICROMETER_LOGGING
 
 		//memset(numb_wldsd, 0, sizeof(numb_wldsd));
 		//dtostrf(d_ReadData(), 8, 5, numb_wldsd);
@@ -8092,12 +8099,12 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 		strcat(data_wldsd, numb_wldsd);
 		//strcat(data_wldsd, ";");
 		card.write_command(data_wldsd);
-
+#endif //MICROMETER_LOGGING
 		
 		//row[ix] = d_ReadData();
 		
-		row[ix] = output; // current_position[Z_AXIS];
-
+		//row[ix] = output; // current_position[Z_AXIS];
+		row[ix] = current_position[Z_AXIS];
 		if (iy % 2 == 1 ? ix == 0 : ix == x_points_num - 1) {
 			for (int i = 0; i < x_points_num; i++) {
 				SERIAL_PROTOCOLPGM(" ");
@@ -8115,7 +8122,7 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 	card.closefile();
 	clean_up_after_endstop_move(l_feedmultiply);
 }
-#endif
+#endif //DIS
 
 void temp_compensation_start() {
 	
