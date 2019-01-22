@@ -987,7 +987,7 @@ void list_sec_lang_from_external_flash()
 // are initialized by the main() routine provided by the Arduino framework.
 void setup()
 {
-	mmu_init();
+	//mmu_init();
 	
 	ultralcd_init();
 
@@ -7915,8 +7915,11 @@ void check_babystep()
 #ifdef MICROMETER_LOGGING
 #define D_REQUIRE 16 //white
 #define D_DATACLOCK 76 //green
-#define D_DATA 62 //A8
+#define D_DATA 62 //A8 - blue
 
+//#define D_DATACLOCK		24	//green, Y_MAX, scope CH2
+//#define D_DATA			30	//blue, X_MAX (P3-PIN3 (TX2)) scope CH1
+//#define D_REQUIRE		23	//white, Z_MAX
 
 void d_setup()
 {	
