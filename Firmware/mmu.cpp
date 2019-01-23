@@ -226,7 +226,7 @@ void mmu_loop(void)
 			puts_P(PSTR("MMU - ENABLED"));
 			mmu_enabled = true;
 			//if we have filament loaded into the nozzle, we can decide if printer has idler sensor right now; otherwise we will will wait till start of T-code so it will be detected on beginning of second T-code
-			if(check_for_idler_sensor()) mmu_idler_sensor_detected = true;
+			//if(check_for_idler_sensor()) mmu_idler_sensor_detected = true;
 			mmu_state = 1;
 		}
 		return;

@@ -389,6 +389,7 @@ extern void crashdet_stop_and_save_print();
 void d_setup();
 float d_ReadData();
 void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y);
+void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y);
 
 #endif
 float temp_comp_interpolation(float temperature);

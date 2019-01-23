@@ -987,7 +987,7 @@ void list_sec_lang_from_external_flash()
 // are initialized by the main() routine provided by the Arduino framework.
 void setup()
 {
-	mmu_init();
+	//mmu_init();
 	
 	ultralcd_init();
 
@@ -1706,8 +1706,8 @@ void host_keepalive() {
      switch (busy_state) {
       case IN_HANDLER:
       case IN_PROCESS:
-        SERIAL_ECHO_START;
-        SERIAL_ECHOLNPGM("busy: processing");
+        //SERIAL_ECHO_START;
+       // SERIAL_ECHOLNPGM("busy: processing");
         break;
       case PAUSED_FOR_USER:
         SERIAL_ECHO_START;
@@ -4297,17 +4297,46 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 		float offset_x = 74;
 		float offset_y = 33;
 
-		if (code_seen('X')) dimension_x = code_value();
-		if (code_seen('Y')) dimension_y = code_value();
-		if (code_seen("XP")) { strchr_pointer+=1; points_x = code_value(); }
-		if (code_seen("YP")) { strchr_pointer+=1; points_y = code_value(); }
-		if (code_seen("XO")) { strchr_pointer+=1; offset_x = code_value(); }
-		if (code_seen("YO")) { strchr_pointer+=1; offset_y = code_value(); }
-		
+		if (code_seen('A')) dimension_x = code_value();
+		if (code_seen('B')) dimension_y = code_value();
+		if (code_seen('C')) { /*strchr_pointer+=1; */points_x = code_value(); }
+		if (code_seen('D')) { /*strchr_pointer+=1; */points_y = code_value(); }
+		if (code_seen('E')) { /*strchr_pointer+=1; */offset_x = code_value(); }
+		if (code_seen('F')) { /*strchr_pointer+=1; */offset_y = code_value(); }
+		printf_P(PSTR("DIM X: %f\n"), dimension_x);
+		printf_P(PSTR("DIM Y: %f\n"), dimension_y);
+		printf_P(PSTR("POINTS X: %d\n"), points_x);
+		printf_P(PSTR("POINTS Y: %d\n"), points_y);
+		printf_P(PSTR("OFFSET X: %f\n"), offset_x);
+		printf_P(PSTR("OFFSET Y: %f\n"), offset_y);
 		bed_analysis(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
-		
+		//bed_analysis(20,dimension_y,points_x,points_y,offset_x,offset_y);
 	} break;
 	
+	case 78:
+	{
+		float dimension_x = 40;
+		float dimension_y = 40;
+		int points_x = 40;
+		int points_y = 40;
+		float offset_x = 74;
+		float offset_y = 33;
+
+		if (code_seen('A')) dimension_x = code_value();
+		if (code_seen('B')) dimension_y = code_value();
+		if (code_seen('C')) { /*strchr_pointer+=1; */points_x = code_value(); }
+		if (code_seen('D')) { /*strchr_pointer+=1; */points_y = code_value(); }
+		if (code_seen('E')) { /*strchr_pointer+=1; */offset_x = code_value(); }
+		if (code_seen('F')) { /*strchr_pointer+=1; */offset_y = code_value(); }
+		printf_P(PSTR("DIM X: %f\n"), dimension_x);
+		printf_P(PSTR("DIM Y: %f\n"), dimension_y);
+		printf_P(PSTR("POINTS X: %d\n"), points_x);
+		printf_P(PSTR("POINTS Y: %d\n"), points_y);
+		printf_P(PSTR("OFFSET X: %f\n"), offset_x);
+		printf_P(PSTR("OFFSET Y: %f\n"), offset_y);
+ 		bed_check(dimension_x,dimension_y,points_x,points_y,offset_x,offset_y);
+	}break;
+
 #endif
 
 	case 79: {
@@ -7889,6 +7918,15 @@ void check_babystep()
 	}	
 }
 #ifdef DIS
+#ifdef MICROMETER_LOGGING
+//#define D_REQUIRE 16 //white
+//#define D_DATACLOCK 76 //green
+//#define D_DATA 62 //A8 - blue
+
+#define D_DATACLOCK		24	//green, Y_MAX, scope CH2
+#define D_DATA			30	//blue, X_MAX (P3-PIN3 (TX2)) scope CH1
+#define D_REQUIRE		23	//white, Z_MAX
+
 void d_setup()
 {	
 	pinMode(D_DATACLOCK, INPUT_PULLUP);
@@ -7896,7 +7934,6 @@ void d_setup()
 	pinMode(D_REQUIRE, OUTPUT);
 	digitalWrite(D_REQUIRE, HIGH);
 }
-
 
 float d_ReadData()
 {
@@ -7938,6 +7975,191 @@ float d_ReadData()
 
 }
 
+#endif //MICROMETER_LOGGING
+
+void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y) {
+	int t1 = 0;
+	int t_delay = 0;
+	int digit[13];
+	int m;
+	char str[3];
+	//String mergeOutput;
+	char mergeOutput[15];
+	float output;
+
+	int mesh_point = 0; //index number of calibration point
+	float bed_zero_ref_x = (-22.f + X_PROBE_OFFSET_FROM_EXTRUDER); //shift between zero point on bed and target and between probe and nozzle
+	float bed_zero_ref_y = (-0.6f + Y_PROBE_OFFSET_FROM_EXTRUDER);
+
+	float mesh_home_z_search = 4;
+	float measure_z_heigth = 0.2f;
+	float row[x_points_num];
+	int ix = 0;
+	int iy = 0;
+
+	const char* filename_wldsd = "mesh.txt";
+	char data_wldsd[70];
+	char numb_wldsd[10];
+#ifdef MICROMETER_LOGGING
+	d_setup();
+#endif //MICROMETER_LOGGING
+
+	unsigned int custom_message_type_old = custom_message_type;
+	unsigned int custom_message_state_old = custom_message_state;
+	custom_message_type = CUSTOM_MSG_TYPE_MESHBL;
+	custom_message_state = (x_points_num * y_points_num) + 10;
+	lcd_update(1);
+
+	mbl.reset();
+	babystep_undo();
+
+	card.openFile(filename_wldsd, false);
+
+	current_position[Z_AXIS] = mesh_home_z_search;
+	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[Z_AXIS] / 60, active_extruder);
+
+	int XY_AXIS_FEEDRATE = homing_feedrate[X_AXIS] / 20;
+	int Z_LIFT_FEEDRATE = homing_feedrate[Z_AXIS] / 40;
+
+	int l_feedmultiply = setup_for_endstop_move(false);
+
+	SERIAL_PROTOCOLPGM("Num X,Y: ");
+	SERIAL_PROTOCOL(x_points_num);
+	SERIAL_PROTOCOLPGM(",");
+	SERIAL_PROTOCOL(y_points_num);
+	SERIAL_PROTOCOLPGM("\nZ search height: ");
+	SERIAL_PROTOCOL(mesh_home_z_search);
+	SERIAL_PROTOCOLPGM("\nDimension X,Y: ");
+	SERIAL_PROTOCOL(x_dimension);
+	SERIAL_PROTOCOLPGM(",");
+	SERIAL_PROTOCOL(y_dimension);
+	SERIAL_PROTOCOLLNPGM("\nMeasured points:");
+
+	while (mesh_point != x_points_num * y_points_num) {
+		ix = mesh_point % x_points_num; // from 0 to MESH_NUM_X_POINTS - 1
+		iy = mesh_point / x_points_num;
+		if (iy & 1) ix = (x_points_num - 1) - ix; // Zig zag
+		float z0 = 0.f;
+		current_position[Z_AXIS] = mesh_home_z_search;
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+		st_synchronize();
+
+
+		//current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
+		//current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
+
+		current_position[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
+		current_position[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
+
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		st_synchronize();
+
+		current_position[Z_AXIS] = measure_z_heigth;
+		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		st_synchronize();
+		delay_keep_alive(1000);
+#ifdef MICROMETER_LOGGING
+
+		//memset(numb_wldsd, 0, sizeof(numb_wldsd));
+		//dtostrf(d_ReadData(), 8, 5, numb_wldsd);
+		//strcat(data_wldsd, numb_wldsd);
+
+
+		
+		//MYSERIAL.println(data_wldsd);
+		//delay(1000);
+		//delay(3000);
+		//t1 = millis();
+		
+		//while (digitalRead(D_DATACLOCK) == LOW) {}
+		//while (digitalRead(D_DATACLOCK) == HIGH) {}
+		memset(digit, 0, sizeof(digit));
+		//cli();
+		digitalWrite(D_REQUIRE, LOW);	
+		
+		for (int i = 0; i<13; i++)
+		{
+			//t1 = millis();
+			for (int j = 0; j < 4; j++)
+			{
+				while (digitalRead(D_DATACLOCK) == LOW) {}				
+				while (digitalRead(D_DATACLOCK) == HIGH) {}
+				//printf_P(PSTR("Done %d\n"), j);
+				bitWrite(digit[i], j, digitalRead(D_DATA));
+			}
+			//t_delay = (millis() - t1);
+			//SERIAL_PROTOCOLPGM(" ");
+			//SERIAL_PROTOCOL_F(t_delay, 5);
+			//SERIAL_PROTOCOLPGM(" ");
+
+		}
+		//sei();
+		digitalWrite(D_REQUIRE, HIGH);
+		mergeOutput[0] = '\0';
+		output = 0;
+		for (int r = 5; r <= 10; r++) //Merge digits
+		{			
+			sprintf(str, "%d", digit[r]);
+			strcat(mergeOutput, str);
+		}
+		
+		output = atof(mergeOutput);
+
+		if (digit[4] == 8) //Handle sign
+		{
+			output *= -1;
+		}
+
+		for (int i = digit[11]; i > 0; i--) //Handle floating point
+		{
+			output *= 0.1;
+		}
+		
+
+		//output = d_ReadData();
+
+		//row[ix] = current_position[Z_AXIS];
+
+		memset(data_wldsd, 0, sizeof(data_wldsd));
+
+		for (int i = 0; i <3; i++) {
+			memset(numb_wldsd, 0, sizeof(numb_wldsd));
+			dtostrf(current_position[i], 8, 5, numb_wldsd);
+			strcat(data_wldsd, numb_wldsd);
+			strcat(data_wldsd, ";");
+
+		}
+		memset(numb_wldsd, 0, sizeof(numb_wldsd));
+		dtostrf(output, 8, 5, numb_wldsd);
+		strcat(data_wldsd, numb_wldsd);
+		//strcat(data_wldsd, ";");
+		card.write_command(data_wldsd);
+#endif //MICROMETER_LOGGING
+		
+		//row[ix] = d_ReadData();
+		
+		//row[ix] = output; // current_position[Z_AXIS];
+		row[ix] = current_position[Z_AXIS];
+		if (iy % 2 == 1 ? ix == 0 : ix == x_points_num - 1) {
+			for (int i = 0; i < x_points_num; i++) {
+				SERIAL_PROTOCOLPGM(" ");
+				SERIAL_PROTOCOL_F(row[i], 5);
+
+
+			}
+			SERIAL_PROTOCOLPGM("\n");
+		}
+		custom_message_state--;
+		mesh_point++;
+		lcd_update(1);
+
+	}
+	card.closefile();
+	clean_up_after_endstop_move(l_feedmultiply);
+
+
+}
+
 void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y) {
 	int t1 = 0;
 	int t_delay = 0;
@@ -7960,9 +8182,9 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 	const char* filename_wldsd = "wldsd.txt";
 	char data_wldsd[70];
 	char numb_wldsd[10];
-
+#ifdef MICROMETER_LOGGING
 	d_setup();
-
+#endif //MICROMETER_LOGGING
 	if (!(axis_known_position[X_AXIS] && axis_known_position[Y_AXIS] && axis_known_position[Z_AXIS])) {
 		// We don't know where we are! HOME!
 		// Push the commands to the front of the message queue in the reverse order!
@@ -8024,7 +8246,7 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 			break;
 			card.closefile();
 		}
-
+#ifdef MICROMETER_LOGGING
 
 		//memset(numb_wldsd, 0, sizeof(numb_wldsd));
 		//dtostrf(d_ReadData(), 8, 5, numb_wldsd);
@@ -8098,12 +8320,12 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 		strcat(data_wldsd, numb_wldsd);
 		//strcat(data_wldsd, ";");
 		card.write_command(data_wldsd);
-
+#endif //MICROMETER_LOGGING
 		
 		//row[ix] = d_ReadData();
 		
-		row[ix] = output; // current_position[Z_AXIS];
-
+		//row[ix] = output; // current_position[Z_AXIS];
+		row[ix] = current_position[Z_AXIS];
 		if (iy % 2 == 1 ? ix == 0 : ix == x_points_num - 1) {
 			for (int i = 0; i < x_points_num; i++) {
 				SERIAL_PROTOCOLPGM(" ");
@@ -8121,7 +8343,7 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 	card.closefile();
 	clean_up_after_endstop_move(l_feedmultiply);
 }
-#endif
+#endif //DIS
 
 void temp_compensation_start() {
 	

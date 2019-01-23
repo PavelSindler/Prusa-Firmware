@@ -30,3 +30,4 @@ Firmware/Doc
 /lang/text.sym
 /lang/textaddr.txt
 /build-env/
+/Firmware/Configuration_prusa_bckp.h

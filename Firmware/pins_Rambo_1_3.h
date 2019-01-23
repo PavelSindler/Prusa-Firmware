@@ -35,7 +35,7 @@
 #define Z_STEP_PIN             35
 #define Z_DIR_PIN              47
 #define Z_MIN_PIN              10
-#define Z_MAX_PIN              23
+#define Z_MAX_PIN              -1//23
 #define Z_ENABLE_PIN           27
 #define Z_MS1_PIN              68
 #define Z_MS2_PIN              67
@@ -81,7 +81,7 @@
 #define PS_ON_PIN           -1
 #define KILL_PIN            -1  // 80 with Smart Controller LCD
 #define SUICIDE_PIN         -1  // PIN that has to be turned on right after start, to keep power flowing.
-#define TACH_0				30	// noctua extruder fan
+//#define TACH_0				-1//30	// noctua extruder fan
 
 
 //#define KILL_PIN            32
