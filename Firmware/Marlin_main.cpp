@@ -7913,13 +7913,13 @@ void check_babystep()
 }
 #ifdef DIS
 #ifdef MICROMETER_LOGGING
-#define D_REQUIRE 16 //white
-#define D_DATACLOCK 76 //green
-#define D_DATA 62 //A8 - blue
+//#define D_REQUIRE 16 //white
+//#define D_DATACLOCK 76 //green
+//#define D_DATA 62 //A8 - blue
 
-//#define D_DATACLOCK		24	//green, Y_MAX, scope CH2
-//#define D_DATA			30	//blue, X_MAX (P3-PIN3 (TX2)) scope CH1
-//#define D_REQUIRE		23	//white, Z_MAX
+#define D_DATACLOCK		24	//green, Y_MAX, scope CH2
+#define D_DATA			30	//blue, X_MAX (P3-PIN3 (TX2)) scope CH1
+#define D_REQUIRE		23	//white, Z_MAX
 
 void d_setup()
 {	
@@ -8039,8 +8039,11 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 		st_synchronize();
 
 
-		current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
-		current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
+		//current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
+		//current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
+
+		current_position[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
+		current_position[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
 
 		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 		st_synchronize();
@@ -8075,7 +8078,7 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 			{
 				while (digitalRead(D_DATACLOCK) == LOW) {}				
 				while (digitalRead(D_DATACLOCK) == HIGH) {}
-				printf_P(PSTR("Done %d\n"), j);
+				//printf_P(PSTR("Done %d\n"), j);
 				bitWrite(digit[i], j, digitalRead(D_DATA));
 			}
 			//t_delay = (millis() - t1);
