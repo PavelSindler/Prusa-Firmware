@@ -438,7 +438,6 @@ void serial_echopair_P(const char *s_P, unsigned long v)
     }
   }
 #endif //!SDSUPPORT
-
 void setup_killpin()
 {
   #if defined(KILL_PIN) && KILL_PIN > -1
@@ -7315,12 +7314,13 @@ void clamp_to_software_endstops(float target[3])
         int n_segments = 0;
 		
         if (mbl.active) {
+			//printf_P(PSTR("MBL active\n"));
             float len = abs(dx) + abs(dy);
             if (len > 0)
                 // Split to 3cm segments or shorter.
                 n_segments = int(ceil(len / 30.f));
         }
-        
+        //printf_P(PSTR("MBL not active\n"));
         if (n_segments > 1) {
             float de = e - current_position[E_AXIS];
             for (int i = 1; i < n_segments; ++ i) {
@@ -7970,7 +7970,6 @@ float d_ReadData()
 }
 
 #endif //MICROMETER_LOGGING
-
 void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_points_num, float shift_x, float shift_y) {
 	int t1 = 0;
 	int t_delay = 0;
@@ -7992,11 +7991,14 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 	int iy = 0;
 
 	const char* filename_wldsd = "mesh.txt";
-	char data_wldsd[70];
-	char numb_wldsd[10];
+	char data_wldsd[x_points_num * 7 + 1]; //6 chars(" -A.BCD")for each measurement + null 
+	char numb_wldsd[8]; // (" -A.BCD" + null)
 #ifdef MICROMETER_LOGGING
 	d_setup();
 #endif //MICROMETER_LOGGING
+
+	int XY_AXIS_FEEDRATE = homing_feedrate[X_AXIS] / 20;
+	int Z_LIFT_FEEDRATE = homing_feedrate[Z_AXIS] / 40;
 
 	unsigned int custom_message_type_old = custom_message_type;
 	unsigned int custom_message_state_old = custom_message_state;
@@ -8004,18 +8006,22 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 	custom_message_state = (x_points_num * y_points_num) + 10;
 	lcd_update(1);
 
-	mbl.reset();
+	//mbl.reset();
 	babystep_undo();
 
 	card.openFile(filename_wldsd, false);
 
-	current_position[Z_AXIS] = mesh_home_z_search;
-	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[Z_AXIS] / 60, active_extruder);
+	destination[Z_AXIS] = mesh_home_z_search;
+	//plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
 
-	int XY_AXIS_FEEDRATE = homing_feedrate[X_AXIS] / 20;
-	int Z_LIFT_FEEDRATE = homing_feedrate[Z_AXIS] / 40;
+	plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+	for(int8_t i=0; i < NUM_AXIS; i++) {
+		current_position[i] = destination[i];
+	}
+	st_synchronize();
 
-	int l_feedmultiply = setup_for_endstop_move(false);
+
+	/*int l_feedmultiply = */setup_for_endstop_move(false);
 
 	SERIAL_PROTOCOLPGM("Num X,Y: ");
 	SERIAL_PROTOCOL(x_points_num);
@@ -8034,22 +8040,34 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 		iy = mesh_point / x_points_num;
 		if (iy & 1) ix = (x_points_num - 1) - ix; // Zig zag
 		float z0 = 0.f;
-		current_position[Z_AXIS] = mesh_home_z_search;
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+		destination[Z_AXIS] = mesh_home_z_search;
+		//plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+
+		plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+		for(int8_t i=0; i < NUM_AXIS; i++) {
+			current_position[i] = destination[i];
+		}
 		st_synchronize();
 
 
 		//current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
 		//current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
 
-		current_position[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
-		current_position[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
+		destination[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
+		destination[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
 
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		mesh_plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		for(int8_t i=0; i < NUM_AXIS; i++) {
+			current_position[i] = destination[i];
+		}
 		st_synchronize();
 
-		current_position[Z_AXIS] = measure_z_heigth;
-		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		
+		destination[Z_AXIS] = measure_z_heigth;
+		plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+		for(int8_t i=0; i < NUM_AXIS; i++) {
+			current_position[i] = destination[i];
+		}
 		st_synchronize();
 		delay_keep_alive(1000);
 #ifdef MICROMETER_LOGGING
@@ -8114,42 +8132,34 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 
 		//row[ix] = current_position[Z_AXIS];
 
-		memset(data_wldsd, 0, sizeof(data_wldsd));
 
-		for (int i = 0; i <3; i++) {
-			memset(numb_wldsd, 0, sizeof(numb_wldsd));
-			dtostrf(current_position[i], 8, 5, numb_wldsd);
-			strcat(data_wldsd, numb_wldsd);
-			strcat(data_wldsd, ";");
-
-		}
-		memset(numb_wldsd, 0, sizeof(numb_wldsd));
-		dtostrf(output, 8, 5, numb_wldsd);
-		strcat(data_wldsd, numb_wldsd);
-		//strcat(data_wldsd, ";");
-		card.write_command(data_wldsd);
-#endif //MICROMETER_LOGGING
 		
 		//row[ix] = d_ReadData();
 		
-		//row[ix] = output; // current_position[Z_AXIS];
-		row[ix] = current_position[Z_AXIS];
+		row[ix] = output;
+
 		if (iy % 2 == 1 ? ix == 0 : ix == x_points_num - 1) {
+			memset(data_wldsd, 0, sizeof(data_wldsd));
 			for (int i = 0; i < x_points_num; i++) {
 				SERIAL_PROTOCOLPGM(" ");
 				SERIAL_PROTOCOL_F(row[i], 5);
-
-
+				memset(numb_wldsd, 0, sizeof(numb_wldsd));
+				dtostrf(row[i], 7, 3, numb_wldsd);
+				strcat(data_wldsd, numb_wldsd);
 			}
+			card.write_command(data_wldsd);
 			SERIAL_PROTOCOLPGM("\n");
+
 		}
+
 		custom_message_state--;
 		mesh_point++;
 		lcd_update(1);
 
 	}
+	#endif //MICROMETER_LOGGING
 	card.closefile();
-	clean_up_after_endstop_move(l_feedmultiply);
+	//clean_up_after_endstop_move(l_feedmultiply);
 
 
 }
