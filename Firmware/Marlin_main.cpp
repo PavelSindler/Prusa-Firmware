@@ -7320,10 +7320,11 @@ void clamp_to_software_endstops(float target[3])
                 // Split to 3cm segments or shorter.
                 n_segments = int(ceil(len / 30.f));
         }
-        //printf_P(PSTR("MBL not active\n"));
+//        printf_P(PSTR("n_segments: %d\n"), n_segments);
         if (n_segments > 1) {
             float de = e - current_position[E_AXIS];
             for (int i = 1; i < n_segments; ++ i) {
+//				printf_P(PSTR("i: %d\n"), i);
                 float t = float(i) / float(n_segments);
                 if (saved_printing || (mbl.active == false)) return;
                 plan_buffer_line(
@@ -8011,7 +8012,7 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 
 	card.openFile(filename_wldsd, false);
 
-	destination[Z_AXIS] = mesh_home_z_search;
+	/*destination[Z_AXIS] = mesh_home_z_search;
 	//plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
 
 	plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
@@ -8019,8 +8020,13 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 		current_position[i] = destination[i];
 	}
 	st_synchronize();
-
-
+	*/
+		destination[Z_AXIS] = measure_z_heigth;
+		plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
+		for(int8_t i=0; i < NUM_AXIS; i++) {
+			current_position[i] = destination[i];
+		}
+		st_synchronize();
 	/*int l_feedmultiply = */setup_for_endstop_move(false);
 
 	SERIAL_PROTOCOLPGM("Num X,Y: ");
@@ -8040,14 +8046,14 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 		iy = mesh_point / x_points_num;
 		if (iy & 1) ix = (x_points_num - 1) - ix; // Zig zag
 		float z0 = 0.f;
-		destination[Z_AXIS] = mesh_home_z_search;
+		/*destination[Z_AXIS] = mesh_home_z_search;
 		//plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
 
 		plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
 		for(int8_t i=0; i < NUM_AXIS; i++) {
 			current_position[i] = destination[i];
 		}
-		st_synchronize();
+		st_synchronize();*/
 
 
 		//current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
@@ -8056,19 +8062,14 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 		destination[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
 		destination[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
 
-		mesh_plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
+		mesh_plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], XY_AXIS_FEEDRATE/6, active_extruder);
 		for(int8_t i=0; i < NUM_AXIS; i++) {
 			current_position[i] = destination[i];
 		}
 		st_synchronize();
 
 		
-		destination[Z_AXIS] = measure_z_heigth;
-		plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
-		for(int8_t i=0; i < NUM_AXIS; i++) {
-			current_position[i] = destination[i];
-		}
-		st_synchronize();
+
 		delay_keep_alive(1000);
 #ifdef MICROMETER_LOGGING
 
