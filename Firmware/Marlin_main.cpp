@@ -42,7 +42,7 @@
  *
  *
  */
-
+#define DEBUG_DISABLE_PREVENT_EXTRUDER
 #include "Marlin.h"
 
 #ifdef ENABLE_AUTO_BED_LEVELING
