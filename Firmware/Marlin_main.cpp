@@ -1710,8 +1710,8 @@ void host_keepalive() {
      switch (busy_state) {
       case IN_HANDLER:
       case IN_PROCESS:
-        SERIAL_ECHO_START;
-        SERIAL_ECHOLNPGM("busy: processing");
+        //SERIAL_ECHO_START;
+        //SERIAL_ECHOLNPGM("busy: processing");
         break;
       case PAUSED_FOR_USER:
         SERIAL_ECHO_START;
@@ -8539,7 +8539,18 @@ ISR(INT7_vect) {
 	}
 	else { //interrupt was triggered by falling edge
 		if ((millis_nc() - t_fan_rising_edge) >= FAN_PULSE_WIDTH_LIMIT) {//this pulse was from sensor and not from pwm
-			fan_edge_counter[1] += 2; //we are currently counting all edges so lets count two edges for one pulse
+#ifdef FAN_SOFT_PWM
+			if ((_millis() - extruder_autofan_last_check <= 100) && (fan_measuring)) 
+#endif //FAN_SOFT_PWM
+			{
+				fan_edge_counter[1] += 2; //we are currently counting all edges so lets count two edges for one pulse
+			}
+#ifdef FAN_SOFT_PWM
+			else
+			{
+				fanSpeedSoftPwm = fanSpeedBckp;
+			}
+#endif //FAN_SOFT_PWM
 		}
 	}	
 	EICRB ^= (1 << 6); //change edge

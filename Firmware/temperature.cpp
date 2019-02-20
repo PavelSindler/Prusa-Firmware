@@ -474,11 +474,15 @@ void countFanSpeed()
 {
 	//SERIAL_ECHOPGM("edge counter 1:"); MYSERIAL.println(fan_edge_counter[1]);
 	fan_speed[0] = (fan_edge_counter[0] * (float(250) / (_millis() - extruder_autofan_last_check)));
+#ifdef FAN_SOFT_PWM
+	fan_speed[1] = (fan_edge_counter[1] * 0.25f);
+#else //FAN_SOFT_PWM
 	fan_speed[1] = (fan_edge_counter[1] * (float(250) / (_millis() - extruder_autofan_last_check)));
-	/*SERIAL_ECHOPGM("time interval: "); MYSERIAL.println(_millis() - extruder_autofan_last_check);
+#endif //FAN_SOFT_PWM
+	SERIAL_ECHOPGM("time interval: "); MYSERIAL.println(_millis() - extruder_autofan_last_check);
 	SERIAL_ECHOPGM("extruder fan speed:"); MYSERIAL.print(fan_speed[0]); SERIAL_ECHOPGM("; edge counter:"); MYSERIAL.println(fan_edge_counter[0]);
 	SERIAL_ECHOPGM("print fan speed:"); MYSERIAL.print(fan_speed[1]); SERIAL_ECHOPGM("; edge counter:"); MYSERIAL.println(fan_edge_counter[1]);
-	SERIAL_ECHOLNPGM(" ");*/
+	SERIAL_ECHOLNPGM(" ");
 	fan_edge_counter[0] = 0;
 	fan_edge_counter[1] = 0;
 }
@@ -748,7 +752,7 @@ void manage_heater()
   } // End extruder for loop
 
 #define FAN_CHECK_PERIOD 5000 //5s
-#define FAN_CHECK_DURATION 100 //100ms
+#define FAN_CHECK_DURATION 20 //100ms
 
 #ifndef DEBUG_DISABLE_FANCHECK
   #if (defined(EXTRUDER_0_AUTO_FAN_PIN) && EXTRUDER_0_AUTO_FAN_PIN > -1) || \
@@ -771,7 +775,7 @@ void manage_heater()
 	  countFanSpeed();
 	  checkFanSpeed();
 	  //printf_P(PSTR("fanSpeedSoftPwm 1: %d\n"), fanSpeedSoftPwm);
-	  fanSpeedSoftPwm = fanSpeedBckp;
+	  
 	  //printf_P(PSTR("fan PWM: %d; extr fanSpeed measured: %d; print fan speed measured: %d \n"), fanSpeedBckp, fan_speed[0], fan_speed[1]);
 	  extruder_autofan_last_check = _millis();
 	  fan_measuring = false;
