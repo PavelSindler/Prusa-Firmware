@@ -6584,6 +6584,7 @@ bool lcd_selftest()
 	KEEPALIVE_STATE(IN_HANDLER);
 
 	_progress = lcd_selftest_screen(testScreen::extruderFan, _progress, 3, true, 2000);
+/*
 #if (defined(FANCHECK) && defined(TACH_0)) 		
 	_result = lcd_selftest_fan_dialog(0);
 #else //defined(TACH_0)
@@ -6611,7 +6612,7 @@ bool lcd_selftest()
 
 #endif //defined(TACH_1)
 	}
-
+*/
 	if (_result)
 	{
 		_progress = lcd_selftest_screen(testScreen::fansOk, _progress, 3, true, 2000);

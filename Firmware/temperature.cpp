@@ -768,8 +768,8 @@ void manage_heater()
 	  fan_measuring = true;
   }
   if ((_millis() - extruder_autofan_last_check > FAN_CHECK_DURATION) && (fan_measuring)) {
-	  countFanSpeed();
-	  checkFanSpeed();
+	  //countFanSpeed();
+	  //checkFanSpeed();
 	  //printf_P(PSTR("fanSpeedSoftPwm 1: %d\n"), fanSpeedSoftPwm);
 	  fanSpeedSoftPwm = fanSpeedBckp;
 	  //printf_P(PSTR("fan PWM: %d; extr fanSpeed measured: %d; print fan speed measured: %d \n"), fanSpeedBckp, fan_speed[0], fan_speed[1]);
