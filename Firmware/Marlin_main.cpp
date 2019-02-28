@@ -4553,9 +4553,9 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 			st_synchronize();
 			*/
 			
-			find_z_with_span(10.f, current_position[X_AXIS], current_position[Y_AXIS]);
+			//find_z_with_span(10.f, current_position[X_AXIS], current_position[Y_AXIS]);
 			
-			/*if (!find_bed_induction_sensor_point_z((has_z && mesh_point > 0) ? z0 - Z_CALIBRATION_THRESHOLD : -10.f)) { //if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
+			if (!find_bed_induction_sensor_point_z((has_z && mesh_point > 0) ? z0 - Z_CALIBRATION_THRESHOLD : -10.f)) { //if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
 				kill_message = _T(MSG_BED_LEVELING_FAILED_POINT_LOW);
 				break;
 			}
@@ -4566,7 +4566,7 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 			if (has_z && fabs(z0 - current_position[Z_AXIS]) > Z_CALIBRATION_THRESHOLD) { //if we have data from z calibration, max. allowed difference is 1mm for each point
 				kill_message = _i("Bed leveling failed. Sensor triggered too high. Waiting for reset.");////MSG_BED_LEVELING_FAILED_POINT_HIGH c=20 r=4
 				break;
-			}*/
+			}
 			#ifdef SUPPORT_VERBOSITY
 			if (verbosity_level >= 10) {
 				SERIAL_ECHOPGM("X: ");
@@ -4576,11 +4576,22 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 				MYSERIAL.print(current_position[Y_AXIS], 5);
 				SERIAL_PROTOCOLPGM("\n");
 			}
+
+
+
 			#endif // SUPPORT_VERBOSITY
+
+				SERIAL_ECHOPGM("X: ");
+				MYSERIAL.print(current_position[X_AXIS], 5);
+				SERIAL_ECHOLNPGM("");
+				SERIAL_ECHOPGM("Y: ");
+				MYSERIAL.print(current_position[Y_AXIS], 5);
+				SERIAL_PROTOCOLPGM("\n");
+
 			float offset_z = 0;
 
 #ifdef PINDA_THERMISTOR
-			offset_z = temp_compensation_pinda_thermistor_offset(current_temperature_pinda);
+			//offset_z = temp_compensation_pinda_thermistor_offset(current_temperature_pinda);
 #endif //PINDA_THERMISTOR
 //			#ifdef SUPPORT_VERBOSITY
 /*			if (verbosity_level >= 1)
@@ -4670,8 +4681,10 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 					((i == 2) ? (unsigned char*)EEPROM_BED_CORRECTION_FRONT : (unsigned char*)EEPROM_BED_CORRECTION_REAR);
 				correction = eeprom_read_int8(addr);
 			}
-			if (correction == 0)
+			if (correction == 0) {
+				printf_P(PSTR("i = %d, no correction \n"), i);
 				continue;
+			}
 			
 			if (labs(correction) > BED_ADJUSTMENT_UM_MAX) {
 				SERIAL_ERROR_START;
@@ -4764,6 +4777,15 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
             else
                 SERIAL_PROTOCOLLNPGM("Mesh bed leveling not active.");
             break;
+
+		case 82:
+
+			for (float y = 0; y < Y_MAX_POS; y += 1.f) {
+				for (float x = 0; x < X_MAX_POS; x += 1.f) {
+							printf_P(PSTR("%f "), mbl.get_z(x,y));
+				}
+				printf_P(PSTR("\n"));
+			}
             
 #if 0
         /**
@@ -8128,7 +8150,7 @@ void bed_check(float x_dimension, float y_dimension, int x_points_num, int y_poi
 		}
 		st_synchronize();
 
-		
+	//	printf_P(PSTR("X = %f; Y= %f \n"), current_position[X_AXIS], current_position[Y_AXIS]);
 
 		delay_keep_alive(1000);
 #ifdef MICROMETER_LOGGING
@@ -8301,8 +8323,8 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 		st_synchronize();
 
 
-		current_position[X_AXIS] = 13.f + ix * (x_dimension / (x_points_num - 1)) - bed_zero_ref_x + shift_x;
-		current_position[Y_AXIS] = 6.4f + iy * (y_dimension / (y_points_num - 1)) - bed_zero_ref_y + shift_y;
+		current_position[X_AXIS] = ix * (x_dimension / (x_points_num - 1)) + shift_x;
+		current_position[Y_AXIS] = iy * (y_dimension / (y_points_num - 1)) + shift_y;
 
 		plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 		st_synchronize();
@@ -8390,7 +8412,9 @@ void bed_analysis(float x_dimension, float y_dimension, int x_points_num, int y_
 		//row[ix] = d_ReadData();
 		
 		//row[ix] = output; // current_position[Z_AXIS];
-		row[ix] = current_position[Z_AXIS];
+		if ((ix == 0) && (iy == 0)) row[ix] = 1;
+		else row[ix] = current_position[Z_AXIS];
+
 		if (iy % 2 == 1 ? ix == 0 : ix == x_points_num - 1) {
 			for (int i = 0; i < x_points_num; i++) {
 				SERIAL_PROTOCOLPGM(" ");

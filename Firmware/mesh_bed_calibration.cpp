@@ -1051,8 +1051,8 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	constraints(current_position[X_AXIS], current_position[Y_AXIS]);
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
-
-	float z = find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,1);
+	float z = current_position[Z_AXIS];
 
 
 	// Move Z up to MESH_HOME_Z_SEARCH.
@@ -1067,7 +1067,8 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
 
-	z += find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,1);
+	z += current_position[Z_AXIS];
 
 	// Move Z up to MESH_HOME_Z_SEARCH.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
@@ -1080,7 +1081,8 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	constraints(current_position[X_AXIS], current_position[Y_AXIS]);
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
-	z += find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,1);
+	z += current_position[Z_AXIS];
 
 		// Move Z up to MESH_HOME_Z_SEARCH.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
@@ -1093,7 +1095,8 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	constraints(current_position[X_AXIS], current_position[Y_AXIS]);
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
-	z += find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,1);
+	z += current_position[Z_AXIS];
 
 
 	// Move Z up to MESH_HOME_Z_SEARCH.
@@ -1108,13 +1111,14 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
 
-	z += find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,1);
+	z += current_position[Z_AXIS];
 
 	
 
-
+	printf_P(PSTR("z before avg = %f\n"), z);
 	z = z*0.2;
-
+	printf_P(PSTR("z = %f\n"), z);
 	current_position[Z_AXIS] = z;
 }
 
