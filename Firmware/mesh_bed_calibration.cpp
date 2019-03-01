@@ -1004,9 +1004,11 @@ inline bool find_bed_induction_sensor_point_z(float minimum_z, uint8_t n_iter, i
 		float dz = i?abs(current_position[Z_AXIS] - (z / i)):0;
 //		printf_P(PSTR("i = %d, Curr. pos.=%f\n"), i, current_position[Z_AXIS]);
         z += current_position[Z_AXIS];
+		printf_P(PSTR("%d Z = %f \n"), n_iter, current_position[Z_AXIS]);
 //		printf_P(PSTR(" Z[%d] = %d, dz=%d\n"), i, (int)(current_position[Z_AXIS] * 1000), (int)(dz * 1000));
 		if (dz > 0.05) goto error;//deviation > 50um
     }
+	printf_P(PSTR("\n"));
     current_position[Z_AXIS] = z;
     if (n_iter > 1)
         current_position[Z_AXIS] /= float(n_iter);
@@ -1047,13 +1049,19 @@ void find_z_with_span(float span, float center_x, float center_y) {
 
 	current_position[X_AXIS] = center_x;
 	current_position[Y_AXIS] = center_y;
+	printf_P(PSTR("X: %f; Y:%f\n"), current_position[X_AXIS], current_position[Y_AXIS]);
 	world2machine_clamp(current_position[X_AXIS], current_position[Y_AXIS]);
 	constraints(current_position[X_AXIS], current_position[Y_AXIS]);
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
-	find_bed_induction_sensor_point_z(-10.f,1);
-	float z = current_position[Z_AXIS];
+	
+	//while (!lcd_clicked()) delay_keep_alive(100);
+	//lcd_show_fullscreen_message_and_wait_P(_i("S"));
 
+	find_bed_induction_sensor_point_z(-10.f,2);
+	//delay_keep_alive(1000);
+	float z = current_position[Z_AXIS];
+	float center = current_position[Z_AXIS];
 
 	// Move Z up to MESH_HOME_Z_SEARCH.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
@@ -1067,9 +1075,11 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
 
-	find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,2);
+	//delay_keep_alive(1000);
 	z += current_position[Z_AXIS];
-
+	if (abs(center - current_position[Z_AXIS]) > 0.02) printf_P(PSTR("Magnet??? dZ = %f \n"), center - current_position[Z_AXIS]);
+	else printf_P(PSTR("dZ = %f \n"), center - current_position[Z_AXIS]);
 	// Move Z up to MESH_HOME_Z_SEARCH.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
@@ -1081,9 +1091,11 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	constraints(current_position[X_AXIS], current_position[Y_AXIS]);
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
-	find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,2);
+	//delay_keep_alive(1000);
 	z += current_position[Z_AXIS];
-
+	if (abs(center - current_position[Z_AXIS]) > 0.02) printf_P(PSTR("Magnet??? dZ = %f \n"), center - current_position[Z_AXIS]);
+	else printf_P(PSTR("dZ = %f \n"), center - current_position[Z_AXIS]);
 		// Move Z up to MESH_HOME_Z_SEARCH.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
@@ -1095,10 +1107,11 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	constraints(current_position[X_AXIS], current_position[Y_AXIS]);
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
-	find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,2);
+	//delay_keep_alive(1000);
 	z += current_position[Z_AXIS];
-
-
+	if (abs(center - current_position[Z_AXIS]) > 0.02) printf_P(PSTR("Magnet??? dZ = %f \n"), center - current_position[Z_AXIS]);
+	else printf_P(PSTR("dZ = %f \n"), center - current_position[Z_AXIS]);
 	// Move Z up to MESH_HOME_Z_SEARCH.
 	current_position[Z_AXIS] = MESH_HOME_Z_SEARCH;
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], Z_LIFT_FEEDRATE, active_extruder);
@@ -1111,14 +1124,15 @@ void find_z_with_span(float span, float center_x, float center_y) {
 	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], XY_AXIS_FEEDRATE, active_extruder);
 	st_synchronize();
 
-	find_bed_induction_sensor_point_z(-10.f,1);
+	find_bed_induction_sensor_point_z(-10.f,2);
+	//delay_keep_alive(1000);
 	z += current_position[Z_AXIS];
-
-	
+	if (abs(center - current_position[Z_AXIS]) > 0.02) printf_P(PSTR("Magnet??? dZ = %f \n"), center - current_position[Z_AXIS]);
+	else printf_P(PSTR("dZ = %f \n"), center - current_position[Z_AXIS]);
 
 	printf_P(PSTR("z before avg = %f\n"), z);
 	z = z*0.2;
-	printf_P(PSTR("z = %f\n"), z);
+	printf_P(PSTR("z = %f\n\n"), z);
 	current_position[Z_AXIS] = z;
 }
 

@@ -4553,8 +4553,9 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 			st_synchronize();
 			*/
 			
-			//find_z_with_span(10.f, current_position[X_AXIS], current_position[Y_AXIS]);
-			
+
+			find_bed_induction_sensor_point_z(-10.f, 5);
+				/*
 			if (!find_bed_induction_sensor_point_z((has_z && mesh_point > 0) ? z0 - Z_CALIBRATION_THRESHOLD : -10.f)) { //if we have data from z calibration max allowed difference is 1mm for each point, if we dont have data max difference is 10mm from initial point  
 				kill_message = _T(MSG_BED_LEVELING_FAILED_POINT_LOW);
 				break;
@@ -4566,7 +4567,7 @@ if((eSoundMode==e_SOUND_MODE_LOUD)||(eSoundMode==e_SOUND_MODE_ONCE))
 			if (has_z && fabs(z0 - current_position[Z_AXIS]) > Z_CALIBRATION_THRESHOLD) { //if we have data from z calibration, max. allowed difference is 1mm for each point
 				kill_message = _i("Bed leveling failed. Sensor triggered too high. Waiting for reset.");////MSG_BED_LEVELING_FAILED_POINT_HIGH c=20 r=4
 				break;
-			}
+			}*/
 			#ifdef SUPPORT_VERBOSITY
 			if (verbosity_level >= 10) {
 				SERIAL_ECHOPGM("X: ");
